@@ -52,22 +52,20 @@ export default function DashboardLayout({
               <SidebarMenu className="p-2">
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <Link href={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href}
-                        tooltip={item.label}
-                        className={cn(
-                          "justify-start",
-                           pathname === item.href && "bg-primary/10 text-primary hover:bg-primary/20"
-                        )}
-                      >
-                        <>
-                          <item.icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </>
-                      </SidebarMenuButton>
-                    </Link>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      tooltip={item.label}
+                      className={cn(
+                        "justify-start",
+                         pathname === item.href && "bg-primary/10 text-primary hover:bg-primary/20"
+                      )}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
