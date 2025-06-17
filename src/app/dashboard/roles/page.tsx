@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -24,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, CheckSquare, Square, Search } from "lucide-react";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, Search } from "lucide-react";
 import type { Role } from "@/types";
 import {
   DropdownMenu,
@@ -76,17 +77,17 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
 
   return (
     <div className="grid gap-6 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="roleName" className="text-right">Role Name</Label>
-        <Input id="roleName" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+        <Label htmlFor="roleName" className="sm:text-right">Role Name</Label>
+        <Input id="roleName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
       </div>
-      <div className="grid grid-cols-4 items-start gap-4">
-        <Label htmlFor="description" className="text-right pt-2">Description</Label>
-        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3 min-h-[80px]" />
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+        <Label htmlFor="description" className="sm:text-right sm:pt-2">Description</Label>
+        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" />
       </div>
-      <div className="grid grid-cols-4 items-start gap-4">
-        <Label className="text-right pt-2">Permissions</Label>
-        <div className="col-span-3 space-y-2 max-h-60 overflow-y-auto p-1 border rounded-md">
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+        <Label className="sm:text-right sm:pt-2">Permissions</Label>
+        <div className="sm:col-span-3 space-y-2 max-h-60 overflow-y-auto p-1 border rounded-md">
           {allPermissions.map(permission => (
             <div key={permission.id} className="flex items-center space-x-2">
               <Checkbox
@@ -145,14 +146,14 @@ export default function RoleManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold text-primary tracking-tight">Role Management</h1>
         <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
           setIsFormOpen(isOpen);
           if (!isOpen) setEditingRole(null);
         }}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingRole(null); setIsFormOpen(true); }}>
+            <Button onClick={() => { setEditingRole(null); setIsFormOpen(true); }} className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Add Role
             </Button>
           </DialogTrigger>
@@ -174,7 +175,7 @@ export default function RoleManagementPage() {
           placeholder="Search roles..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 w-full md:w-1/3"
+          className="pl-10 w-full md:w-1/2 lg:w-1/3"
         />
       </div>
 
@@ -183,18 +184,18 @@ export default function RoleManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Role Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Permissions</TableHead>
-                <TableHead className="text-right w-[100px]">Actions</TableHead>
+                <TableHead className="p-2 sm:p-4">Role Name</TableHead>
+                <TableHead className="p-2 sm:p-4 hidden sm:table-cell">Description</TableHead>
+                <TableHead className="p-2 sm:p-4">Permissions</TableHead>
+                <TableHead className="text-right w-[80px] p-2 sm:p-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRoles.map((role) => (
                 <TableRow key={role.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{role.description}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium p-2 sm:p-4">{role.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate p-2 sm:p-4 hidden sm:table-cell">{role.description}</TableCell>
+                  <TableCell className="p-2 sm:p-4">
                     <div className="flex flex-wrap gap-1">
                       {role.permissions.slice(0,3).map(permission => (
                         <Badge key={permission} variant="secondary" className="text-xs">
@@ -204,7 +205,7 @@ export default function RoleManagementPage() {
                       {role.permissions.length > 3 && <Badge variant="secondary">+{role.permissions.length -3} more</Badge>}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right p-2 sm:p-4">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">

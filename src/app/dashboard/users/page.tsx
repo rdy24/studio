@@ -64,7 +64,6 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
       role,
       status: status as User["status"],
       dateJoined: user?.dateJoined || new Date(),
-      // Preserve lastLogin if editing, or set to undefined if new
       lastLogin: user?.lastLogin 
     };
     onSave(newUser);
@@ -72,18 +71,18 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
 
   return (
     <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="name" className="text-right">Name</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+        <Label htmlFor="name" className="sm:text-right">Name</Label>
+        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="email" className="text-right">Email</Label>
-        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" />
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+        <Label htmlFor="email" className="sm:text-right">Email</Label>
+        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="sm:col-span-3" />
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="role" className="text-right">Role</Label>
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+        <Label htmlFor="role" className="sm:text-right">Role</Label>
         <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="col-span-3">
+          <SelectTrigger className="sm:col-span-3">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
           <SelectContent>
@@ -91,10 +90,10 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="status" className="text-right">Status</Label>
+      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+        <Label htmlFor="status" className="sm:text-right">Status</Label>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="col-span-3">
+          <SelectTrigger className="sm:col-span-3">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
@@ -122,31 +121,72 @@ interface UserTableRowProps {
 }
 
 const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, onEdit, onDelete }) => {
-  const [formattedDateJoined, setFormattedDateJoined] = React.useState<string>("Loading...");
-  const [formattedLastLogin, setFormattedLastLogin] = React.useState<string>("Loading...");
-
+  const [isMounted, setIsMounted] = React.useState(false);
   React.useEffect(() => {
-    setFormattedDateJoined(user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : 'N/A');
-    setFormattedLastLogin(user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'N/A');
-  }, [user.dateJoined, user.lastLogin]);
+    setIsMounted(true);
+  }, []);
+
+  const formattedDateJoined = isMounted && user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : (user.dateJoined ? 'Loading...' : 'N/A');
+  const formattedLastLogin = isMounted && user.lastLogin ? new Date(user.lastLogin).toLocaleString() : (user.lastLogin ? 'Loading...' : 'N/A');
+  
+  if (!isMounted && (user.dateJoined || user.lastLogin)) {
+    // To prevent layout shift during hydration, render placeholders or minimal content
+    return (
+      <TableRow className="hover:bg-muted/50">
+        <TableCell className="p-2 sm:p-4">
+          <Avatar className="h-10 w-10" data-ai-hint="person portrait">
+            <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
+            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </TableCell>
+        <TableCell className="font-medium p-2 sm:p-4">{user.name}</TableCell>
+        <TableCell className="p-2 sm:p-4">{user.email}</TableCell>
+        <TableCell className="p-2 sm:p-4">{user.role}</TableCell>
+        <TableCell className="p-2 sm:p-4">
+          <Badge variant={statusBadgeVariant}>{user.status}</Badge>
+        </TableCell>
+        <TableCell className="p-2 sm:p-4 hidden sm:table-cell">Loading...</TableCell>
+        <TableCell className="p-2 sm:p-4 hidden sm:table-cell">Loading...</TableCell>
+        <TableCell className="text-right p-2 sm:p-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(user)}>
+                <Edit className="mr-2 h-4 w-4" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
 
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell>
+      <TableCell className="p-2 sm:p-4">
         <Avatar className="h-10 w-10" data-ai-hint="person portrait">
           <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
           <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
       </TableCell>
-      <TableCell className="font-medium">{user.name}</TableCell>
-      <TableCell>{user.email}</TableCell>
-      <TableCell>{user.role}</TableCell>
-      <TableCell>
+      <TableCell className="font-medium p-2 sm:p-4">{user.name}</TableCell>
+      <TableCell className="p-2 sm:p-4">{user.email}</TableCell>
+      <TableCell className="p-2 sm:p-4">{user.role}</TableCell>
+      <TableCell className="p-2 sm:p-4">
         <Badge variant={statusBadgeVariant}>{user.status}</Badge>
       </TableCell>
-      <TableCell>{formattedDateJoined}</TableCell>
-      <TableCell>{formattedLastLogin}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="p-2 sm:p-4 hidden sm:table-cell">{formattedDateJoined}</TableCell>
+      <TableCell className="p-2 sm:p-4 hidden sm:table-cell">{formattedLastLogin}</TableCell>
+      <TableCell className="text-right p-2 sm:p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -182,7 +222,6 @@ export default function UserManagementPage() {
       setUsers(users.map(u => u.id === user.id ? user : u));
       toast({ title: "User Updated", description: `${user.name} has been successfully updated.` });
     } else {
-      // For new users, explicitly set lastLogin to undefined if not provided
       const newUserWithLastLogin = { ...user, lastLogin: user.lastLogin || undefined };
       setUsers([...users, newUserWithLastLogin]);
       toast({ title: "User Added", description: `${user.name} has been successfully added.` });
@@ -218,18 +257,18 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold text-primary tracking-tight">User Management</h1>
         <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
           setIsFormOpen(isOpen);
           if (!isOpen) setEditingUser(null);
         }}>
           <DialogTrigger asChild>
-            <Button onClick={() => { setEditingUser(null); setIsFormOpen(true); }}>
+            <Button onClick={() => { setEditingUser(null); setIsFormOpen(true); }} className="w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" /> Add User
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingUser ? "Edit User" : "Add New User"}</DialogTitle>
               <DialogDescription>
@@ -247,7 +286,7 @@ export default function UserManagementPage() {
           placeholder="Search users..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 w-full md:w-1/3"
+          className="pl-10 w-full md:w-1/2 lg:w-1/3"
         />
       </div>
 
@@ -256,14 +295,14 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Avatar</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date Joined</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead className="text-right w-[100px]">Actions</TableHead>
+                <TableHead className="w-[60px] p-2 sm:p-4">Avatar</TableHead>
+                <TableHead className="p-2 sm:p-4">Name</TableHead>
+                <TableHead className="p-2 sm:p-4">Email</TableHead>
+                <TableHead className="p-2 sm:p-4">Role</TableHead>
+                <TableHead className="p-2 sm:p-4">Status</TableHead>
+                <TableHead className="p-2 sm:p-4 hidden sm:table-cell">Date Joined</TableHead>
+                <TableHead className="p-2 sm:p-4 hidden sm:table-cell">Last Login</TableHead>
+                <TableHead className="text-right w-[80px] p-2 sm:p-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -286,4 +325,3 @@ export default function UserManagementPage() {
     </div>
   );
 }
-

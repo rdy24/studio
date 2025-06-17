@@ -1,7 +1,8 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Ship, Briefcase, Anchor, TrendingUp, TrendingDown, BarChartBig, User } from "lucide-react";
+import { Users, Ship, Briefcase, Anchor, User } from "lucide-react";
 import type { MetricCardProps } from "@/types";
 import { Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -102,7 +103,7 @@ export default function DashboardPage() {
                 {user: "Charlie", action: "processed 15 new bookings.", time: "1 day ago"},
                 {user: "System", action: "generated EOM financial report.", time: "2 days ago"},
               ].map((activity, index) => (
-                <li key={index} className="flex items-start space-x-3">
+                <li key={index} className="flex items-start space-x-2 sm:space-x-3">
                   <div className="flex-shrink-0 pt-1">
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary">
                       <User className="h-4 w-4 text-secondary-foreground" />
