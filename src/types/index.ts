@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -14,6 +15,26 @@ export interface Role {
   name: string;
   description: string;
   permissions: string[];
+}
+
+export interface Destination {
+  id: string;
+  name: string;
+  country: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export interface Voyage {
+  id: string;
+  name: string;
+  destinationIds: string[]; // Array of Destination IDs
+  startDate?: Date;
+  endDate?: Date;
+  price: number;
+  status: "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
+  description?: string;
+  imageUrl?: string;
 }
 
 export interface MetricCardProps {
