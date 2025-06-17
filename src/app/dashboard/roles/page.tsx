@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit, Trash2, MoreHorizontal, Search } from "lucide-react";
+import { PlusCircle, Edit, Trash2, MoreHorizontal, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Role } from "@/types";
 import {
   DropdownMenu,
@@ -37,6 +37,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRoleContext } from "@/contexts/RoleContext";
+
+const ITEMS_PER_PAGE = 5;
 
 const allPermissions = [
   { id: "manage_users", label: "Manage Users" },
@@ -122,6 +124,7 @@ export default function RoleManagementPage() {
   const [editingRole, setEditingRole] = React.useState<Role | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
   const { toast } = useToast();
 
   const handleSaveRole = (role: Role) => {
@@ -154,8 +157,18 @@ export default function RoleManagementPage() {
     );
   }, [roles, searchTerm, initialRolesLoaded]);
 
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roles.length]);
+
+  const totalRoles = filteredRoles.length;
+  const totalPages = totalRoles > 0 ? Math.ceil(totalRoles / ITEMS_PER_PAGE) : 1;
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedRoles = filteredRoles.slice(startIndex, endIndex);
+
   if (!initialRolesLoaded) {
-    return <p>Loading roles...</p>; // Or a more sophisticated loading skeleton
+    return <p>Loading roles...</p>; 
   }
 
   return (
@@ -205,7 +218,7 @@ export default function RoleManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRoles.map((role) => (
+              {paginatedRoles.map((role) => (
                 <TableRow key={role.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium p-2 sm:p-4">{role.name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-xs truncate p-2 sm:p-4 hidden sm:table-cell">{role.description}</TableCell>
@@ -243,9 +256,38 @@ export default function RoleManagementPage() {
           </Table>
         </CardContent>
       </Card>
-       {filteredRoles.length === 0 && initialRolesLoaded &&(
+       {totalRoles === 0 && initialRolesLoaded &&(
         <p className="text-center text-muted-foreground py-8">No roles found.</p>
+      )}
+      {totalRoles > 0 && initialRolesLoaded && (
+        <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 sm:space-x-2 py-4">
+          <span className="text-sm text-muted-foreground">
+            Page {totalRoles > 0 ? currentPage : 0} of {totalPages}
+          </span>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1 || totalRoles === 0}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalRoles === 0}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+    
