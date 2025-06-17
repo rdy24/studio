@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { PlusCircle, Edit, Trash2, MoreHorizontal, Search } from "lucide-react";
 import type { User } from "@/types";
 import {
@@ -253,6 +254,3 @@ export default function UserManagementPage() {
     </div>
   );
 }
-
-// Add Card and CardContent imports if not globally available
-import { Card, CardContent } from "@/components/ui/card";
