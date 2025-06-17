@@ -43,13 +43,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useUserContext } from "@/contexts/UserContext";
+import { useRoleContext } from "@/contexts/RoleContext"; // Import RoleContext
 
 const ITEMS_PER_PAGE = 5;
 
 const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave: (user: User) => void, availableRoles: string[] }) => {
   const [name, setName] = React.useState(user?.name || "");
   const [email, setEmail] = React.useState(user?.email || "");
-  const [role, setRole] = React.useState(user?.role || availableRoles[0] || "");
+  const [role, setRole] = React.useState(user?.role || (availableRoles.length > 0 ? availableRoles[0] : ""));
   const [status, setStatus] = React.useState(user?.status || "Pending");
 
   const handleSubmit = () => {
@@ -59,7 +60,7 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
       email,
       role,
       status: status as User["status"],
-      avatar: user?.avatar || `https://placehold.co/40x40.png?text=${name.charAt(0) || 'U'}`,
+      avatar: user?.avatar || `https://placehold.co/40x40.png?text=${name.charAt(0).toUpperCase() || 'U'}`,
       dateJoined: user?.dateJoined || new Date(),
       lastLogin: user?.status === "Active" ? (user?.lastLogin || new Date()) : undefined,
     };
@@ -75,7 +76,7 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
     } else {
       setName("");
       setEmail("");
-      setRole(availableRoles[0] || "");
+      setRole(availableRoles.length > 0 ? availableRoles[0] : "");
       setStatus("Pending");
     }
   }, [user, availableRoles]);
@@ -93,7 +94,7 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
       </div>
       <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
         <Label htmlFor="role" className="sm:text-right text-left">Role</Label>
-        <Select value={role} onValueChange={setRole}>
+        <Select value={role} onValueChange={setRole} disabled={availableRoles.length === 0}>
           <SelectTrigger className="sm:col-span-3">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>
@@ -142,7 +143,6 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
   const formattedLastLogin = isMounted && user.lastLogin ? new Date(user.lastLogin).toLocaleString() : (user.lastLogin ? 'Loading...' : 'N/A');
   
   if (!isMounted && (user.dateJoined || user.lastLogin)) {
-    // Simplified skeleton for pre-hydration to avoid layout shifts
     return (
       <TableRow className="hover:bg-muted/50">
         <TableCell className="p-1 sm:p-2 md:p-4 w-[60px]">
@@ -157,7 +157,6 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
         <TableCell className="p-1 sm:p-2 md:p-4 hidden md:table-cell">Loading...</TableCell>
         <TableCell className="p-1 sm:p-2 md:p-4 hidden lg:table-cell">Loading...</TableCell>
         <TableCell className="text-right p-1 sm:p-2 md:p-4 w-[80px]">
-          {/* Placeholder for actions to maintain layout consistency */}
            <div className="h-8 w-8" /> 
         </TableCell>
       </TableRow>
@@ -204,13 +203,14 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
 
 export default function UserManagementPage() {
   const { users, addUser, updateUser, deleteUser, initialUsersLoaded } = useUserContext();
+  const { roles: availableRolesData } = useRoleContext(); // Get roles from RoleContext
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const { toast } = useToast();
 
-  const availableRoles = ["Administrator", "Travel Agent", "Support Staff", "Manager"]; 
+  const availableRoles = React.useMemo(() => availableRolesData.map(role => role.name), [availableRolesData]);
 
   const handleSaveUser = (user: User) => {
     if (editingUser) {
@@ -365,3 +365,4 @@ export default function UserManagementPage() {
 }
 
     
+
