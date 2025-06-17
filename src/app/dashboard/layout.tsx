@@ -52,7 +52,7 @@ export default function DashboardLayout({
               <SidebarMenu className="p-2">
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
-                    <Link href={item.href} legacyBehavior passHref>
+                    <Link href={item.href}>
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.href}
@@ -62,10 +62,10 @@ export default function DashboardLayout({
                            pathname === item.href && "bg-primary/10 text-primary hover:bg-primary/20"
                         )}
                       >
-                        <a>
+                        <>
                           <item.icon className="h-5 w-5" />
                           <span>{item.label}</span>
-                        </a>
+                        </>
                       </SidebarMenuButton>
                     </Link>
                   </SidebarMenuItem>

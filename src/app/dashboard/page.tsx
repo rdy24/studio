@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Ship, Briefcase, Anchor, TrendingUp, TrendingDown, BarChartBig } from "lucide-react";
+import { Users, Ship, Briefcase, Anchor, TrendingUp, TrendingDown, BarChartBig, User } from "lucide-react";
 import type { MetricCardProps } from "@/types";
 import { Bar, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
