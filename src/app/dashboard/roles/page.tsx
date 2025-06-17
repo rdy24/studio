@@ -37,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRoleContext } from "@/contexts/RoleContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -85,37 +86,41 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
   };
 
   return (
-    <div className="grid gap-6 py-4">
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="roleName" className="sm:text-right text-left">Role Name</Label>
-        <Input id="roleName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label htmlFor="description" className="sm:text-right text-left sm:pt-2">Description</Label>
-        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label className="sm:text-right text-left sm:pt-2">Permissions</Label>
-        <div className="sm:col-span-3 space-y-2 max-h-60 overflow-y-auto p-1 border rounded-md">
-          {allPermissions.map(permission => (
-            <div key={permission.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`perm-${permission.id}`}
-                checked={selectedPermissions.includes(permission.id)}
-                onCheckedChange={() => handlePermissionChange(permission.id)}
-              />
-              <Label htmlFor={`perm-${permission.id}`} className="font-normal cursor-pointer">{permission.label}</Label>
+    <>
+      <ScrollArea className="max-h-[60vh] pr-4">
+        <div className="grid gap-6 py-4">
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="roleName" className="sm:text-right text-left">Role Name</Label>
+            <Input id="roleName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+            <Label htmlFor="description" className="sm:text-right text-left sm:pt-2">Description</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+            <Label className="sm:text-right text-left sm:pt-2">Permissions</Label>
+            <div className="sm:col-span-3 space-y-2 max-h-60 overflow-y-auto p-2 border rounded-md">
+              {allPermissions.map(permission => (
+                <div key={permission.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`perm-${permission.id}`}
+                    checked={selectedPermissions.includes(permission.id)}
+                    onCheckedChange={() => handlePermissionChange(permission.id)}
+                  />
+                  <Label htmlFor={`perm-${permission.id}`} className="font-normal cursor-pointer">{permission.label}</Label>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
       <DialogFooter className="pt-4">
          <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
          </DialogClose>
         <Button type="submit" onClick={handleSubmit}>Save role</Button>
       </DialogFooter>
-    </div>
+    </>
   );
 };
 
@@ -289,5 +294,3 @@ export default function RoleManagementPage() {
     </div>
   );
 }
-
-    

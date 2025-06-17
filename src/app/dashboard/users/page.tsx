@@ -43,7 +43,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useUserContext } from "@/contexts/UserContext";
-import { useRoleContext } from "@/contexts/RoleContext"; // Import RoleContext
+import { useRoleContext } from "@/contexts/RoleContext"; 
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -83,46 +84,50 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
 
 
   return (
-    <div className="grid gap-4 py-4">
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="name" className="sm:text-right text-left">Name</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="email" className="sm:text-right text-left">Email</Label>
-        <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="sm:col-span-3" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="role" className="sm:text-right text-left">Role</Label>
-        <Select value={role} onValueChange={setRole} disabled={availableRoles.length === 0}>
-          <SelectTrigger className="sm:col-span-3">
-            <SelectValue placeholder="Select a role" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableRoles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="status" className="sm:text-right text-left">Status</Label>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="sm:col-span-3">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Inactive">Inactive</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <>
+      <ScrollArea className="max-h-[60vh] pr-4">
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="name" className="sm:text-right text-left">Name</Label>
+            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="email" className="sm:text-right text-left">Email</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="sm:col-span-3" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="role" className="sm:text-right text-left">Role</Label>
+            <Select value={role} onValueChange={setRole} disabled={availableRoles.length === 0}>
+              <SelectTrigger className="sm:col-span-3">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableRoles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="status" className="sm:text-right text-left">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="sm:col-span-3">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </ScrollArea>
       <DialogFooter className="pt-4">
         <DialogClose asChild>
            <Button type="button" variant="outline">Cancel</Button>
         </DialogClose>
         <Button type="submit" onClick={handleSubmit}>Save user</Button>
       </DialogFooter>
-    </div>
+    </>
   );
 };
 
@@ -203,14 +208,17 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
 
 export default function UserManagementPage() {
   const { users, addUser, updateUser, deleteUser, initialUsersLoaded } = useUserContext();
-  const { roles: availableRolesData } = useRoleContext(); // Get roles from RoleContext
+  const { roles: availableRolesData, initialRolesLoaded: rolesLoaded } = useRoleContext(); 
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const { toast } = useToast();
 
-  const availableRoles = React.useMemo(() => availableRolesData.map(role => role.name), [availableRolesData]);
+  const availableRoles = React.useMemo(() => {
+    if (!rolesLoaded) return [];
+    return availableRolesData.map(role => role.name);
+  }, [availableRolesData, rolesLoaded]);
 
   const handleSaveUser = (user: User) => {
     if (editingUser) {
@@ -262,8 +270,8 @@ export default function UserManagementPage() {
     }
   };
   
-  if (!initialUsersLoaded) {
-     return <p>Loading users...</p>;
+  if (!initialUsersLoaded || !rolesLoaded) {
+     return <p>Loading users and roles...</p>;
   }
 
   return (
@@ -363,6 +371,3 @@ export default function UserManagementPage() {
     </div>
   );
 }
-
-    
-

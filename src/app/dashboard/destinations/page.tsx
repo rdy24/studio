@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useDestinationContext } from "@/contexts/DestinationContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -71,30 +72,34 @@ const DestinationForm = ({ destination, onSave }: { destination?: Destination | 
   };
 
   return (
-    <div className="grid gap-6 py-4">
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="destName" className="sm:text-right text-left">Name</Label>
-        <Input id="destName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" placeholder="e.g., Paris, Maldives" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="country" className="sm:text-right text-left">Country</Label>
-        <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} className="sm:col-span-3" placeholder="e.g., France, Japan" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label htmlFor="description" className="sm:text-right text-left sm:pt-2">Description</Label>
-        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" placeholder="Brief description of the destination" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="imageUrl" className="sm:text-right text-left">Image URL</Label>
-        <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="sm:col-span-3" placeholder="https://example.com/image.png" />
-      </div>
+    <>
+      <ScrollArea className="max-h-[60vh] pr-4">
+        <div className="grid gap-6 py-4">
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="destName" className="sm:text-right text-left">Name</Label>
+            <Input id="destName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" placeholder="e.g., Paris, Maldives" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="country" className="sm:text-right text-left">Country</Label>
+            <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} className="sm:col-span-3" placeholder="e.g., France, Japan" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+            <Label htmlFor="description" className="sm:text-right text-left sm:pt-2">Description</Label>
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" placeholder="Brief description of the destination" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="imageUrl" className="sm:text-right text-left">Image URL</Label>
+            <Input id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="sm:col-span-3" placeholder="https://example.com/image.png" />
+          </div>
+        </div>
+      </ScrollArea>
       <DialogFooter className="pt-4">
         <DialogClose asChild>
           <Button type="button" variant="outline">Cancel</Button>
         </DialogClose>
         <Button type="submit" onClick={handleSubmit}>Save Destination</Button>
       </DialogFooter>
-    </div>
+    </>
   );
 };
 

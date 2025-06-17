@@ -58,6 +58,7 @@ const VoyageForm = ({ voyage, onSave }: { voyage?: Voyage | null, onSave: (voyag
   const [status, setStatus] = React.useState<Voyage["status"]>(voyage?.status || "Upcoming");
   const [description, setDescription] = React.useState(voyage?.description || "");
   const [imageUrl, setImageUrl] = React.useState(voyage?.imageUrl || "");
+  const { toast } = useToast();
 
   React.useEffect(() => {
     if (voyage) {
@@ -108,125 +109,128 @@ const VoyageForm = ({ voyage, onSave }: { voyage?: Voyage | null, onSave: (voyag
     onSave(newVoyage);
   };
   
-  const { toast } = useToast();
 
   return (
-    <div className="grid gap-6 py-4">
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="voyageName" className="sm:text-right text-left">Name*</Label>
-        <Input id="voyageName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" placeholder="e.g., Alpine Adventure" />
-      </div>
+    <>
+      <ScrollArea className="max-h-[60vh] pr-4">
+        <div className="grid gap-6 py-4">
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="voyageName" className="sm:text-right text-left">Name*</Label>
+            <Input id="voyageName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" placeholder="e.g., Alpine Adventure" />
+          </div>
 
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label className="sm:text-right text-left sm:pt-2">Destinations*</Label>
-        <div className="sm:col-span-3">
-          {initialDestinationsLoaded ? (
-            availableDestinations.length > 0 ? (
-              <ScrollArea className="h-32 w-full rounded-md border p-2">
-                {availableDestinations.map((dest) => (
-                  <div key={dest.id} className="flex items-center space-x-2 mb-1">
-                    <Checkbox
-                      id={`dest-${dest.id}`}
-                      checked={selectedDestinationIds.includes(dest.id)}
-                      onCheckedChange={() => handleDestinationToggle(dest.id)}
-                    />
-                    <Label htmlFor={`dest-${dest.id}`} className="font-normal cursor-pointer">{dest.name} ({dest.country})</Label>
-                  </div>
-                ))}
-              </ScrollArea>
-            ) : <p className="text-sm text-muted-foreground">No destinations available. Please add destinations first.</p>
-          ) : <p className="text-sm text-muted-foreground">Loading destinations...</p>}
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+            <Label className="sm:text-right text-left sm:pt-2">Destinations*</Label>
+            <div className="sm:col-span-3">
+              {initialDestinationsLoaded ? (
+                availableDestinations.length > 0 ? (
+                  <ScrollArea className="h-32 w-full rounded-md border p-2">
+                    {availableDestinations.map((dest) => (
+                      <div key={dest.id} className="flex items-center space-x-2 mb-1">
+                        <Checkbox
+                          id={`dest-${dest.id}`}
+                          checked={selectedDestinationIds.includes(dest.id)}
+                          onCheckedChange={() => handleDestinationToggle(dest.id)}
+                        />
+                        <Label htmlFor={`dest-${dest.id}`} className="font-normal cursor-pointer">{dest.name} ({dest.country})</Label>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                ) : <p className="text-sm text-muted-foreground">No destinations available. Please add destinations first.</p>
+              ) : <p className="text-sm text-muted-foreground">Loading destinations...</p>}
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="startDate" className="sm:text-right text-left">Start Date*</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "sm:col-span-3 justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={setStartDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="endDate" className="sm:text-right text-left">End Date*</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "sm:col-span-3 justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  disabled={(date) => startDate && date < startDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="price" className="sm:text-right text-left">Price (USD)*</Label>
+            <Input id="price" type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value))} className="sm:col-span-3" placeholder="e.g., 1500" min="0" />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="status" className="sm:text-right text-left">Status</Label>
+            <Select value={status} onValueChange={(value) => setStatus(value as Voyage["status"])}>
+              <SelectTrigger className="sm:col-span-3">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Upcoming">Upcoming</SelectItem>
+                <SelectItem value="Ongoing">Ongoing</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
+            <Label htmlFor="voyageDescription" className="sm:text-right text-left sm:pt-2">Description</Label>
+            <Textarea id="voyageDescription" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" placeholder="Detailed information about the voyage" />
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="voyageImageUrl" className="sm:text-right text-left">Image URL</Label>
+            <Input id="voyageImageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="sm:col-span-3" placeholder="https://example.com/voyage-image.png" />
+          </div>
         </div>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="startDate" className="sm:text-right text-left">Start Date*</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "sm:col-span-3 justify-start text-left font-normal",
-                !startDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={startDate}
-              onSelect={setStartDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="endDate" className="sm:text-right text-left">End Date*</Label>
-         <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "sm:col-span-3 justify-start text-left font-normal",
-                !endDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {endDate ? format(endDate, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={endDate}
-              onSelect={setEndDate}
-              disabled={(date) => startDate && date < startDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="price" className="sm:text-right text-left">Price (USD)*</Label>
-        <Input id="price" type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value))} className="sm:col-span-3" placeholder="e.g., 1500" min="0" />
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="status" className="sm:text-right text-left">Status</Label>
-        <Select value={status} onValueChange={(value) => setStatus(value as Voyage["status"])}>
-          <SelectTrigger className="sm:col-span-3">
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Upcoming">Upcoming</SelectItem>
-            <SelectItem value="Ongoing">Ongoing</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
-            <SelectItem value="Cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label htmlFor="voyageDescription" className="sm:text-right text-left sm:pt-2">Description</Label>
-        <Textarea id="voyageDescription" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" placeholder="Detailed information about the voyage" />
-      </div>
-      <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="voyageImageUrl" className="sm:text-right text-left">Image URL</Label>
-        <Input id="voyageImageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="sm:col-span-3" placeholder="https://example.com/voyage-image.png" />
-      </div>
+      </ScrollArea>
       <DialogFooter className="pt-4">
         <DialogClose asChild>
           <Button type="button" variant="outline">Cancel</Button>
         </DialogClose>
         <Button type="submit" onClick={handleSubmit}>Save Voyage</Button>
       </DialogFooter>
-    </div>
+    </>
   );
 };
 
@@ -243,10 +247,10 @@ const VoyageTableRow = ({ voyage, onEdit, onDelete }: { voyage: Voyage; onEdit: 
 
   const getStatusBadgeVariant = (status: Voyage["status"]): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
-      case "Upcoming": return "default"; // Primary color
-      case "Ongoing": return "secondary"; // A distinct color, maybe blueish or greenish
-      case "Completed": return "outline"; // Greyed out or less prominent
-      case "Cancelled": return "destructive"; // Red
+      case "Upcoming": return "default"; 
+      case "Ongoing": return "secondary"; 
+      case "Completed": return "outline"; 
+      case "Cancelled": return "destructive"; 
       default: return "default";
     }
   };
@@ -267,7 +271,7 @@ const VoyageTableRow = ({ voyage, onEdit, onDelete }: { voyage: Voyage; onEdit: 
         <TableCell className="p-1 sm:p-2 md:p-4 hidden sm:table-cell">${voyage.price.toLocaleString()}</TableCell>
         <TableCell className="p-1 sm:p-2 md:p-4"><Badge variant={getStatusBadgeVariant(voyage.status)}>{voyage.status}</Badge></TableCell>
         <TableCell className="text-right p-1 sm:p-2 md:p-4 w-[80px]">
-          <div className="h-8 w-8" /> {/* Placeholder for actions dropdown for consistent height */}
+          <div className="h-8 w-8" /> 
         </TableCell>
       </TableRow>
      );
@@ -341,10 +345,10 @@ export default function VoyageManagementPage() {
     toast({ title: "Voyage Deleted", description: `Voyage has been successfully deleted.`, variant: "destructive" });
   };
   
-  const { getDestinationNameById } = useDestinationContext();
+  const { getDestinationNameById, initialDestinationsLoaded } = useDestinationContext();
 
   const filteredVoyages = React.useMemo(() => {
-    if (!initialVoyagesLoaded) return [];
+    if (!initialVoyagesLoaded || !initialDestinationsLoaded) return [];
     return voyages.filter(voy => {
         const destinationNames = voy.destinationIds.map(id => getDestinationNameById(id)).join(", ").toLowerCase();
         return (
@@ -354,7 +358,7 @@ export default function VoyageManagementPage() {
             voy.status.toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
-  }, [voyages, searchTerm, initialVoyagesLoaded, getDestinationNameById]);
+  }, [voyages, searchTerm, initialVoyagesLoaded, getDestinationNameById, initialDestinationsLoaded]);
   
   React.useEffect(() => {
     setCurrentPage(1);
@@ -366,8 +370,8 @@ export default function VoyageManagementPage() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedVoyages = filteredVoyages.slice(startIndex, endIndex);
 
-  if (!initialVoyagesLoaded) {
-    return <p>Loading voyages...</p>;
+  if (!initialVoyagesLoaded || !initialDestinationsLoaded) {
+    return <p>Loading voyages and destinations...</p>;
   }
 
   return (
@@ -383,7 +387,7 @@ export default function VoyageManagementPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Voyage
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl"> {/* Increased width for more complex form */}
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingVoyage ? "Edit Voyage" : "Add New Voyage"}</DialogTitle>
               <DialogDescription>
