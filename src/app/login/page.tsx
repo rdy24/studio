@@ -15,20 +15,20 @@ import { Label } from "@/components/ui/label";
 import { ShipWheel } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const router = useRouter();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Placeholder for login logic
     console.log("Login attempt with:", { email, password });
-    // In a real app, you would redirect to /dashboard upon successful login
-    // For now, let's simulate a successful login by redirecting to the dashboard
-    // import { redirect } from 'next/navigation'; redirect('/dashboard');
-    // alert("Login functionality not implemented yet. Redirecting to dashboard for demo.");
-    // window.location.href = "/dashboard"; 
+    // In a real app, you would implement actual authentication here
+    // For now, we simulate a successful login by redirecting to the dashboard
+    router.push("/dashboard");
   };
 
   return (
