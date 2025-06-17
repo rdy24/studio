@@ -21,16 +21,42 @@ const initialUsersData: User[] = [
   { id: "4", name: "Diana Prince", email: "diana@example.com", role: "Travel Agent", status: "Pending", avatar: "https://placehold.co/40x40.png?text=DP", dateJoined: new Date("2024-07-22T08:00:00Z") },
 ];
 
+const LOCAL_STORAGE_KEY = "voyageControlUsers";
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = React.useState<User[]>([]);
   const [initialUsersLoaded, setInitialUsersLoaded] = React.useState(false);
 
   React.useEffect(() => {
-    // Simulate loading initial data or load from localStorage if implemented
-    setUsers(initialUsersData);
+    try {
+      const storedUsers = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedUsers) {
+        const parsedUsers: User[] = JSON.parse(storedUsers).map((user: any) => ({
+          ...user,
+          dateJoined: user.dateJoined ? new Date(user.dateJoined) : undefined,
+          lastLogin: user.lastLogin ? new Date(user.lastLogin) : undefined,
+        }));
+        setUsers(parsedUsers);
+      } else {
+        setUsers(initialUsersData);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialUsersData));
+      }
+    } catch (error) {
+      console.error("Failed to load users from localStorage:", error);
+      setUsers(initialUsersData); // Fallback to initial data
+    }
     setInitialUsersLoaded(true);
   }, []);
+
+  React.useEffect(() => {
+    if (initialUsersLoaded) { // Only save if initial load is complete
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(users));
+      } catch (error) {
+        console.error("Failed to save users to localStorage:", error);
+      }
+    }
+  }, [users, initialUsersLoaded]);
 
   const addUser = (user: User) => {
     setUsers((prevUsers) => [...prevUsers, user]);

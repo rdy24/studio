@@ -20,14 +20,37 @@ const initialRolesData: Role[] = [
   { id: "3", name: "Support Staff", description: "Assists users and manages support tickets.", permissions: ["view_users", "manage_support_tickets"] },
 ];
 
+const LOCAL_STORAGE_KEY = "voyageControlRoles";
+
 export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [initialRolesLoaded, setInitialRolesLoaded] = React.useState(false);
 
   React.useEffect(() => {
-    setRoles(initialRolesData);
+    try {
+      const storedRoles = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (storedRoles) {
+        setRoles(JSON.parse(storedRoles));
+      } else {
+        setRoles(initialRolesData);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialRolesData));
+      }
+    } catch (error) {
+      console.error("Failed to load roles from localStorage:", error);
+      setRoles(initialRolesData); // Fallback to initial data
+    }
     setInitialRolesLoaded(true);
   }, []);
+
+  React.useEffect(() => {
+    if (initialRolesLoaded) { // Only save if initial load is complete
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(roles));
+      } catch (error) {
+        console.error("Failed to save roles to localStorage:", error);
+      }
+    }
+  }, [roles, initialRolesLoaded]);
 
   const addRole = (role: Role) => {
     setRoles((prevRoles) => [...prevRoles, role]);
