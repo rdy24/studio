@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -63,6 +64,8 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
       role,
       status: status as User["status"],
       dateJoined: user?.dateJoined || new Date(),
+      // Preserve lastLogin if editing, or set to undefined if new
+      lastLogin: user?.lastLogin 
     };
     onSave(newUser);
   };
@@ -111,6 +114,60 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
   );
 };
 
+interface UserTableRowProps {
+  user: User;
+  statusBadgeVariant: "default" | "secondary" | "outline";
+  onEdit: (user: User) => void;
+  onDelete: (userId: string) => void;
+}
+
+const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, onEdit, onDelete }) => {
+  const [formattedDateJoined, setFormattedDateJoined] = React.useState<string>("Loading...");
+  const [formattedLastLogin, setFormattedLastLogin] = React.useState<string>("Loading...");
+
+  React.useEffect(() => {
+    setFormattedDateJoined(user.dateJoined ? new Date(user.dateJoined).toLocaleDateString() : 'N/A');
+    setFormattedLastLogin(user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'N/A');
+  }, [user.dateJoined, user.lastLogin]);
+
+  return (
+    <TableRow className="hover:bg-muted/50">
+      <TableCell>
+        <Avatar className="h-10 w-10" data-ai-hint="person portrait">
+          <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
+          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      </TableCell>
+      <TableCell className="font-medium">{user.name}</TableCell>
+      <TableCell>{user.email}</TableCell>
+      <TableCell>{user.role}</TableCell>
+      <TableCell>
+        <Badge variant={statusBadgeVariant}>{user.status}</Badge>
+      </TableCell>
+      <TableCell>{formattedDateJoined}</TableCell>
+      <TableCell>{formattedLastLogin}</TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(user)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 export default function UserManagementPage() {
   const [users, setUsers] = React.useState<User[]>(initialUsers);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
@@ -125,7 +182,9 @@ export default function UserManagementPage() {
       setUsers(users.map(u => u.id === user.id ? user : u));
       toast({ title: "User Updated", description: `${user.name} has been successfully updated.` });
     } else {
-      setUsers([...users, user]);
+      // For new users, explicitly set lastLogin to undefined if not provided
+      const newUserWithLastLogin = { ...user, lastLogin: user.lastLogin || undefined };
+      setUsers([...users, newUserWithLastLogin]);
       toast({ title: "User Added", description: `${user.name} has been successfully added.` });
     }
     setEditingUser(null);
@@ -209,40 +268,13 @@ export default function UserManagementPage() {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <Avatar className="h-10 w-10" data-ai-hint="person portrait">
-                      <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(user.status)}>{user.status}</Badge>
-                  </TableCell>
-                  <TableCell>{user.dateJoined?.toLocaleDateString()}</TableCell>
-                  <TableCell>{user.lastLogin ? user.lastLogin.toLocaleString() : 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                <UserTableRow
+                  key={user.id}
+                  user={user}
+                  statusBadgeVariant={getStatusBadgeVariant(user.status)}
+                  onEdit={handleEditUser}
+                  onDelete={handleDeleteUser}
+                />
               ))}
             </TableBody>
           </Table>
@@ -254,3 +286,4 @@ export default function UserManagementPage() {
     </div>
   );
 }
+

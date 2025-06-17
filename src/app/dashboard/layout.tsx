@@ -34,6 +34,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   return (
     <SidebarProvider>
@@ -54,11 +59,11 @@ export default function DashboardLayout({
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === item.href}
+                      isActive={isMounted ? pathname === item.href : false}
                       tooltip={item.label}
                       className={cn(
                         "justify-start",
-                         pathname === item.href && "bg-primary/10 text-primary hover:bg-primary/20"
+                         isMounted && pathname === item.href && "bg-primary/10 text-primary hover:bg-primary/20"
                       )}
                     >
                       <Link href={item.href}>
