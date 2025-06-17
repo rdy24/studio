@@ -36,12 +36,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-
-const initialRoles: Role[] = [
-  { id: "1", name: "Administrator", description: "Full access to all system features.", permissions: ["manage_users", "manage_roles", "manage_voyages", "view_reports"] },
-  { id: "2", name: "Travel Agent", description: "Manages voyages and bookings.", permissions: ["manage_voyages", "view_bookings"] },
-  { id: "3", name: "Support Staff", description: "Assists users and manages support tickets.", permissions: ["view_users", "manage_support_tickets"] },
-];
+import { useRoleContext } from "@/contexts/RoleContext";
 
 const allPermissions = [
   { id: "manage_users", label: "Manage Users" },
@@ -56,6 +51,18 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
   const [name, setName] = React.useState(role?.name || "");
   const [description, setDescription] = React.useState(role?.description || "");
   const [selectedPermissions, setSelectedPermissions] = React.useState<string[]>(role?.permissions || []);
+
+  React.useEffect(() => {
+    if (role) {
+      setName(role.name);
+      setDescription(role.description);
+      setSelectedPermissions(role.permissions);
+    } else {
+      setName("");
+      setDescription("");
+      setSelectedPermissions([]);
+    }
+  }, [role]);
 
   const handlePermissionChange = (permissionId: string) => {
     setSelectedPermissions(prev =>
@@ -78,15 +85,15 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
   return (
     <div className="grid gap-6 py-4">
       <div className="grid gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
-        <Label htmlFor="roleName" className="sm:text-right">Role Name</Label>
+        <Label htmlFor="roleName" className="sm:text-right text-left">Role Name</Label>
         <Input id="roleName" value={name} onChange={(e) => setName(e.target.value)} className="sm:col-span-3" />
       </div>
       <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label htmlFor="description" className="sm:text-right sm:pt-2">Description</Label>
+        <Label htmlFor="description" className="sm:text-right text-left sm:pt-2">Description</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="sm:col-span-3 min-h-[80px]" />
       </div>
       <div className="grid gap-2 sm:grid-cols-4 sm:items-start sm:gap-4">
-        <Label className="sm:text-right sm:pt-2">Permissions</Label>
+        <Label className="sm:text-right text-left sm:pt-2">Permissions</Label>
         <div className="sm:col-span-3 space-y-2 max-h-60 overflow-y-auto p-1 border rounded-md">
           {allPermissions.map(permission => (
             <div key={permission.id} className="flex items-center space-x-2">
@@ -100,7 +107,7 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
           ))}
         </div>
       </div>
-      <DialogFooter>
+      <DialogFooter className="pt-4">
          <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
          </DialogClose>
@@ -111,7 +118,7 @@ const RoleForm = ({ role, onSave }: { role?: Role | null, onSave: (role: Role) =
 };
 
 export default function RoleManagementPage() {
-  const [roles, setRoles] = React.useState<Role[]>(initialRoles);
+  const { roles, addRole, updateRole, deleteRole, initialRolesLoaded } = useRoleContext();
   const [editingRole, setEditingRole] = React.useState<Role | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -119,10 +126,10 @@ export default function RoleManagementPage() {
 
   const handleSaveRole = (role: Role) => {
     if (editingRole) {
-      setRoles(roles.map(r => r.id === role.id ? role : r));
+      updateRole(role);
       toast({ title: "Role Updated", description: `Role '${role.name}' has been successfully updated.` });
     } else {
-      setRoles([...roles, role]);
+      addRole(role);
       toast({ title: "Role Added", description: `Role '${role.name}' has been successfully added.` });
     }
     setEditingRole(null);
@@ -135,14 +142,21 @@ export default function RoleManagementPage() {
   };
 
   const handleDeleteRole = (roleId: string) => {
-    setRoles(roles.filter(r => r.id !== roleId));
+    deleteRole(roleId);
     toast({ title: "Role Deleted", description: `Role has been successfully deleted.`, variant: "destructive" });
   };
   
-  const filteredRoles = roles.filter(role => 
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRoles = React.useMemo(() => {
+    if(!initialRolesLoaded) return [];
+    return roles.filter(role => 
+      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [roles, searchTerm, initialRolesLoaded]);
+
+  if (!initialRolesLoaded) {
+    return <p>Loading roles...</p>; // Or a more sophisticated loading skeleton
+  }
 
   return (
     <div className="space-y-6">
@@ -229,7 +243,7 @@ export default function RoleManagementPage() {
           </Table>
         </CardContent>
       </Card>
-       {filteredRoles.length === 0 && (
+       {filteredRoles.length === 0 && initialRolesLoaded &&(
         <p className="text-center text-muted-foreground py-8">No roles found.</p>
       )}
     </div>

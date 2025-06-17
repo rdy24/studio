@@ -42,18 +42,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-
-const initialUsers: User[] = [
-  { id: "1", name: "Alice Wonderland", email: "alice@example.com", role: "Administrator", status: "Active", avatar: "https://placehold.co/40x40.png?text=AW", lastLogin: new Date("2024-07-20T10:00:00Z"), dateJoined: new Date("2023-01-15T09:00:00Z") },
-  { id: "2", name: "Bob The Builder", email: "bob@example.com", role: "Travel Agent", status: "Active", avatar: "https://placehold.co/40x40.png?text=BB", lastLogin: new Date("2024-07-21T14:30:00Z"), dateJoined: new Date("2023-02-20T11:00:00Z") },
-  { id: "3", name: "Charlie Chaplin", email: "charlie@example.com", role: "Support Staff", status: "Inactive", avatar: "https://placehold.co/40x40.png?text=CC", dateJoined: new Date("2023-03-10T16:00:00Z") },
-  { id: "4", name: "Diana Prince", email: "diana@example.com", role: "Travel Agent", status: "Pending", avatar: "https://placehold.co/40x40.png?text=DP", dateJoined: new Date("2024-07-22T08:00:00Z") },
-];
+import { useUserContext } from "@/contexts/UserContext";
 
 const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave: (user: User) => void, availableRoles: string[] }) => {
   const [name, setName] = React.useState(user?.name || "");
   const [email, setEmail] = React.useState(user?.email || "");
-  const [role, setRole] = React.useState(user?.role || availableRoles[0]);
+  const [role, setRole] = React.useState(user?.role || availableRoles[0] || "");
   const [status, setStatus] = React.useState(user?.status || "Pending");
 
   const handleSubmit = () => {
@@ -63,11 +57,27 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
       email,
       role,
       status: status as User["status"],
+      avatar: user?.avatar || `https://placehold.co/40x40.png?text=${name.charAt(0) || 'U'}`,
       dateJoined: user?.dateJoined || new Date(),
-      lastLogin: user?.lastLogin 
+      lastLogin: user?.status === "Active" ? (user?.lastLogin || new Date()) : undefined,
     };
     onSave(newUser);
   };
+  
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setEmail(user.email);
+      setRole(user.role);
+      setStatus(user.status);
+    } else {
+      setName("");
+      setEmail("");
+      setRole(availableRoles[0] || "");
+      setStatus("Pending");
+    }
+  }, [user, availableRoles]);
+
 
   return (
     <div className="grid gap-4 py-4">
@@ -103,7 +113,7 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
           </SelectContent>
         </Select>
       </div>
-      <DialogFooter>
+      <DialogFooter className="pt-4">
         <DialogClose asChild>
            <Button type="button" variant="outline">Cancel</Button>
         </DialogClose>
@@ -115,7 +125,7 @@ const UserForm = ({ user, onSave, availableRoles }: { user?: User | null, onSave
 
 interface UserTableRowProps {
   user: User;
-  statusBadgeVariant: "default" | "secondary" | "outline";
+  statusBadgeVariant: "default" | "secondary" | "outline" | "destructive";
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
 }
@@ -130,24 +140,23 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
   const formattedLastLogin = isMounted && user.lastLogin ? new Date(user.lastLogin).toLocaleString() : (user.lastLogin ? 'Loading...' : 'N/A');
   
   if (!isMounted && (user.dateJoined || user.lastLogin)) {
-    // To prevent layout shift during hydration, render placeholders or minimal content
     return (
       <TableRow className="hover:bg-muted/50">
-        <TableCell className="p-2 sm:p-4">
-          <Avatar className="h-10 w-10" data-ai-hint="person portrait">
+        <TableCell className="p-1 sm:p-2 md:p-4">
+          <Avatar className="h-8 w-8 sm:h-10 sm:w-10" data-ai-hint="person portrait">
             <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
             <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </TableCell>
-        <TableCell className="font-medium p-2 sm:p-4">{user.name}</TableCell>
-        <TableCell className="p-2 sm:p-4">{user.email}</TableCell>
-        <TableCell className="p-2 sm:p-4">{user.role}</TableCell>
-        <TableCell className="p-2 sm:p-4">
+        <TableCell className="font-medium p-1 sm:p-2 md:p-4">{user.name}</TableCell>
+        <TableCell className="p-1 sm:p-2 md:p-4 hidden xs:table-cell">{user.email}</TableCell>
+        <TableCell className="p-1 sm:p-2 md:p-4 hidden sm:table-cell">{user.role}</TableCell>
+        <TableCell className="p-1 sm:p-2 md:p-4">
           <Badge variant={statusBadgeVariant}>{user.status}</Badge>
         </TableCell>
-        <TableCell className="p-2 sm:p-4 hidden sm:table-cell">Loading...</TableCell>
-        <TableCell className="p-2 sm:p-4 hidden sm:table-cell">Loading...</TableCell>
-        <TableCell className="text-right p-2 sm:p-4">
+        <TableCell className="p-1 sm:p-2 md:p-4 hidden md:table-cell">Loading...</TableCell>
+        <TableCell className="p-1 sm:p-2 md:p-4 hidden lg:table-cell">Loading...</TableCell>
+        <TableCell className="text-right p-1 sm:p-2 md:p-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -169,24 +178,23 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
     );
   }
 
-
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell className="p-2 sm:p-4">
-        <Avatar className="h-10 w-10" data-ai-hint="person portrait">
+      <TableCell className="p-1 sm:p-2 md:p-4">
+        <Avatar className="h-8 w-8 sm:h-10 sm:w-10" data-ai-hint="person portrait">
           <AvatarImage src={user.avatar || `https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt={user.name} />
           <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
       </TableCell>
-      <TableCell className="font-medium p-2 sm:p-4">{user.name}</TableCell>
-      <TableCell className="p-2 sm:p-4">{user.email}</TableCell>
-      <TableCell className="p-2 sm:p-4">{user.role}</TableCell>
-      <TableCell className="p-2 sm:p-4">
+      <TableCell className="font-medium p-1 sm:p-2 md:p-4">{user.name}</TableCell>
+      <TableCell className="p-1 sm:p-2 md:p-4 hidden xs:table-cell">{user.email}</TableCell>
+      <TableCell className="p-1 sm:p-2 md:p-4 hidden sm:table-cell">{user.role}</TableCell>
+      <TableCell className="p-1 sm:p-2 md:p-4">
         <Badge variant={statusBadgeVariant}>{user.status}</Badge>
       </TableCell>
-      <TableCell className="p-2 sm:p-4 hidden sm:table-cell">{formattedDateJoined}</TableCell>
-      <TableCell className="p-2 sm:p-4 hidden sm:table-cell">{formattedLastLogin}</TableCell>
-      <TableCell className="text-right p-2 sm:p-4">
+      <TableCell className="p-1 sm:p-2 md:p-4 hidden md:table-cell">{formattedDateJoined}</TableCell>
+      <TableCell className="p-1 sm:p-2 md:p-4 hidden lg:table-cell">{formattedLastLogin}</TableCell>
+      <TableCell className="text-right p-1 sm:p-2 md:p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
@@ -209,21 +217,20 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, statusBadgeVariant, o
 };
 
 export default function UserManagementPage() {
-  const [users, setUsers] = React.useState<User[]>(initialUsers);
+  const { users, addUser, updateUser, deleteUser, initialUsersLoaded } = useUserContext();
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const { toast } = useToast();
 
-  const availableRoles = ["Administrator", "Travel Agent", "Support Staff", "Manager"];
+  const availableRoles = ["Administrator", "Travel Agent", "Support Staff", "Manager"]; // This could come from RoleContext in a more advanced setup
 
   const handleSaveUser = (user: User) => {
     if (editingUser) {
-      setUsers(users.map(u => u.id === user.id ? user : u));
+      updateUser(user);
       toast({ title: "User Updated", description: `${user.name} has been successfully updated.` });
     } else {
-      const newUserWithLastLogin = { ...user, lastLogin: user.lastLogin || undefined };
-      setUsers([...users, newUserWithLastLogin]);
+      addUser(user);
       toast({ title: "User Added", description: `${user.name} has been successfully added.` });
     }
     setEditingUser(null);
@@ -236,17 +243,20 @@ export default function UserManagementPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(u => u.id !== userId));
+    deleteUser(userId);
     toast({ title: "User Deleted", description: `User has been successfully deleted.`, variant: "destructive" });
   };
   
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = React.useMemo(() => {
+    if (!initialUsersLoaded) return [];
+    return users.filter(user => 
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm, initialUsersLoaded]);
 
-  const getStatusBadgeVariant = (status: User["status"]) => {
+  const getStatusBadgeVariant = (status: User["status"]): "default" | "secondary" | "outline" | "destructive" => {
     switch (status) {
       case "Active": return "default";
       case "Inactive": return "secondary";
@@ -254,6 +264,10 @@ export default function UserManagementPage() {
       default: return "default";
     }
   };
+  
+  if (!initialUsersLoaded) {
+     return <p>Loading users...</p>; // Or a more sophisticated loading skeleton
+  }
 
   return (
     <div className="space-y-6">
@@ -295,14 +309,14 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60px] p-2 sm:p-4">Avatar</TableHead>
-                <TableHead className="p-2 sm:p-4">Name</TableHead>
-                <TableHead className="p-2 sm:p-4">Email</TableHead>
-                <TableHead className="p-2 sm:p-4">Role</TableHead>
-                <TableHead className="p-2 sm:p-4">Status</TableHead>
-                <TableHead className="p-2 sm:p-4 hidden sm:table-cell">Date Joined</TableHead>
-                <TableHead className="p-2 sm:p-4 hidden sm:table-cell">Last Login</TableHead>
-                <TableHead className="text-right w-[80px] p-2 sm:p-4">Actions</TableHead>
+                <TableHead className="w-[60px] p-1 sm:p-2 md:p-4">Avatar</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4">Name</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4 hidden xs:table-cell">Email</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4 hidden sm:table-cell">Role</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4">Status</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4 hidden md:table-cell">Date Joined</TableHead>
+                <TableHead className="p-1 sm:p-2 md:p-4 hidden lg:table-cell">Last Login</TableHead>
+                <TableHead className="text-right w-[80px] p-1 sm:p-2 md:p-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -319,7 +333,7 @@ export default function UserManagementPage() {
           </Table>
         </CardContent>
       </Card>
-      {filteredUsers.length === 0 && (
+      {filteredUsers.length === 0 && initialUsersLoaded && (
         <p className="text-center text-muted-foreground py-8">No users found.</p>
       )}
     </div>
