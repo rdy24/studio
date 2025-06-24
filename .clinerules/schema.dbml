@@ -1,0 +1,129 @@
+// Voyage Control Database Schema
+
+// Users table
+Table users {
+  id INTEGER [pk, increment]
+  name VARCHAR(100) [not null]
+  email VARCHAR(100) [not null, unique]
+  password_hash VARCHAR(255) [not null]
+  role_id INTEGER [ref: > roles.id, not null]
+  status VARCHAR(20) [not null, note: 'Active, Inactive, Pending']
+  avatar_url VARCHAR(255)
+  last_login DATETIME
+  date_joined DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Roles table
+Table roles {
+  id INTEGER [pk, increment]
+  name VARCHAR(50) [not null, unique]
+  description TEXT
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Permissions table
+Table permissions {
+  id INTEGER [pk, increment]
+  name VARCHAR(50) [not null, unique]
+  description TEXT
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Role permissions junction table
+Table role_permissions {
+  role_id INTEGER [ref: > roles.id, not null]
+  permission_id INTEGER [ref: > permissions.id, not null]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+// Destinations table
+Table destinations {
+  id INTEGER [pk, increment]
+  name VARCHAR(100) [not null]
+  country VARCHAR(100) [not null]
+  description TEXT
+  image_url VARCHAR(255)
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Voyages table
+Table voyages {
+  id INTEGER [pk, increment]
+  name VARCHAR(100) [not null]
+  start_date DATE
+  end_date DATE
+  price DECIMAL(10, 2) [not null]
+  status VARCHAR(20) [not null, note: 'Upcoming, Ongoing, Completed, Cancelled']
+  description TEXT
+  image_url VARCHAR(255)
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Voyage destinations junction table
+Table voyage_destinations {
+  voyage_id INTEGER [ref: > voyages.id, not null]
+  destination_id INTEGER [ref: > destinations.id, not null]
+  order_index INTEGER [not null, note: 'Order of destinations in the voyage']
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (voyage_id, destination_id) [pk]
+  }
+}
+
+// Bookings table
+Table bookings {
+  id INTEGER [pk, increment]
+  voyage_id INTEGER [ref: > voyages.id, not null]
+  user_id INTEGER [ref: > users.id, not null]
+  booking_date DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  status VARCHAR(20) [not null, note: 'Confirmed, Pending, Cancelled']
+  payment_status VARCHAR(20) [not null, note: 'Paid, Pending, Refunded']
+  total_amount DECIMAL(10, 2) [not null]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Support tickets table
+Table support_tickets {
+  id INTEGER [pk, increment]
+  user_id INTEGER [ref: > users.id, not null]
+  subject VARCHAR(200) [not null]
+  description TEXT [not null]
+  status VARCHAR(20) [not null, note: 'Open, In Progress, Resolved, Closed']
+  priority VARCHAR(20) [not null, note: 'Low, Medium, High, Critical']
+  assigned_to INTEGER [ref: > users.id]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Support ticket responses table
+Table ticket_responses {
+  id INTEGER [pk, increment]
+  ticket_id INTEGER [ref: > support_tickets.id, not null]
+  user_id INTEGER [ref: > users.id, not null]
+  response TEXT [not null]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// Activity log table
+Table activity_logs {
+  id INTEGER [pk, increment]
+  user_id INTEGER [ref: > users.id, not null]
+  action_type VARCHAR(50) [not null]
+  entity_type VARCHAR(50) [not null]
+  entity_id INTEGER [not null]
+  description TEXT [not null]
+  created_at DATETIME [not null, default: `CURRENT_TIMESTAMP`]
+}

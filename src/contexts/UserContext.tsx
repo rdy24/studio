@@ -1,88 +1,215 @@
-
 "use client";
 
 import * as React from "react";
 import type { User } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+	fetchUsers,
+	createUser,
+	updateUser as updateUserApi,
+	deleteUser as deleteUserApi,
+	UserCreateInput,
+	UserUpdateInput,
+} from "@/lib/services/user-service";
 
 interface UserContextType {
-  users: User[];
-  addUser: (user: User) => void;
-  updateUser: (user: User) => void;
-  deleteUser: (userId: string) => void;
-  initialUsersLoaded: boolean;
+	users: User[];
+	addUser: (
+		user: Omit<User, "id" | "dateJoined" | "lastLogin"> & {
+			roleId: number;
+			password?: string;
+		}
+	) => Promise<User | null>;
+	updateUser: (
+		userId: string,
+		userData: Omit<User, "id" | "dateJoined" | "lastLogin" | "role"> & {
+			roleId: number;
+			password?: string;
+		}
+	) => Promise<User | null>;
+	deleteUser: (userId: string) => Promise<boolean>;
+	initialUsersLoaded: boolean;
+	isLoading: boolean;
+	error: string | null;
 }
 
 const UserContext = React.createContext<UserContextType | undefined>(undefined);
 
-const initialUsersData: User[] = [
-  { id: "1", name: "Alice Wonderland", email: "alice@example.com", role: "Administrator", status: "Active", avatar: "https://placehold.co/40x40.png?text=AW", lastLogin: new Date("2024-07-20T10:00:00Z"), dateJoined: new Date("2023-01-15T09:00:00Z") },
-  { id: "2", name: "Bob The Builder", email: "bob@example.com", role: "Travel Agent", status: "Active", avatar: "https://placehold.co/40x40.png?text=BB", lastLogin: new Date("2024-07-21T14:30:00Z"), dateJoined: new Date("2023-02-20T11:00:00Z") },
-  { id: "3", name: "Charlie Chaplin", email: "charlie@example.com", role: "Support Staff", status: "Inactive", avatar: "https://placehold.co/40x40.png?text=CC", dateJoined: new Date("2023-03-10T16:00:00Z") },
-  { id: "4", name: "Diana Prince", email: "diana@example.com", role: "Travel Agent", status: "Pending", avatar: "https://placehold.co/40x40.png?text=DP", dateJoined: new Date("2024-07-22T08:00:00Z") },
-];
+export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
+	children,
+}) => {
+	const [users, setUsers] = React.useState<User[]>([]);
+	const [initialUsersLoaded, setInitialUsersLoaded] = React.useState(false);
+	const [isLoading, setIsLoading] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
+	const { toast } = useToast();
 
-const LOCAL_STORAGE_KEY = "voyageControlUsers";
+	// Fetch users from API
+	const loadUsers = React.useCallback(async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const data = await fetchUsers();
+			setUsers(data.data);
+			setInitialUsersLoaded(true);
+		} catch (err) {
+			console.error("Error fetching users:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error ? err.message : "Failed to load users",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	}, [toast]);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [initialUsersLoaded, setInitialUsersLoaded] = React.useState(false);
+	// Load users on component mount
+	React.useEffect(() => {
+		loadUsers();
+	}, [loadUsers]);
 
-  React.useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedUsers) {
-        const parsedUsers: User[] = JSON.parse(storedUsers).map((user: any) => ({
-          ...user,
-          dateJoined: user.dateJoined ? new Date(user.dateJoined) : undefined,
-          lastLogin: user.lastLogin ? new Date(user.lastLogin) : undefined,
-        }));
-        setUsers(parsedUsers);
-      } else {
-        setUsers(initialUsersData);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialUsersData));
-      }
-    } catch (error) {
-      console.error("Failed to load users from localStorage:", error);
-      setUsers(initialUsersData); // Fallback to initial data
-    }
-    setInitialUsersLoaded(true);
-  }, []);
+	// Add a new user
+	const addUser = async (
+		userData: Omit<User, "id" | "dateJoined" | "lastLogin"> & {
+			roleId: number;
+			password?: string;
+		}
+	): Promise<User | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const userInput: UserCreateInput = {
+				name: userData.name,
+				email: userData.email,
+				password: userData.password,
+				roleId: userData.roleId,
+				status: userData.status,
+				avatar: userData.avatar,
+			};
 
-  React.useEffect(() => {
-    if (initialUsersLoaded) { // Only save if initial load is complete
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(users));
-      } catch (error) {
-        console.error("Failed to save users to localStorage:", error);
-      }
-    }
-  }, [users, initialUsersLoaded]);
+			const newUser = await createUser(userInput);
+			setUsers((prevUsers) => [...prevUsers, newUser]);
+			return newUser;
+		} catch (err) {
+			console.error("Error adding user:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error ? err.message : "Failed to add user",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const addUser = (user: User) => {
-    setUsers((prevUsers) => [...prevUsers, user]);
-  };
+	// Update an existing user
+	const updateUser = async (
+		userId: string,
+		userData: Omit<User, "id" | "dateJoined" | "lastLogin" | "role"> & {
+			roleId: number;
+			password?: string;
+		}
+	): Promise<User | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const userInput: UserUpdateInput = {
+				name: userData.name,
+				email: userData.email,
+				password: userData.password,
+				roleId: userData.roleId,
+				status: userData.status,
+				avatar: userData.avatar,
+			};
 
-  const updateUser = (updatedUser: User) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
-    );
-  };
+			const updatedUser = await updateUserApi(userId, userInput);
 
-  const deleteUser = (userId: string) => {
-    setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-  };
+			setUsers((prevUsers) =>
+				prevUsers.map((user) =>
+					user.id === userId ? updatedUser : user
+				)
+			);
+			return updatedUser;
+		} catch (err) {
+			console.error("Error updating user:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to update user",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  return (
-    <UserContext.Provider value={{ users, addUser, updateUser, deleteUser, initialUsersLoaded }}>
-      {children}
-    </UserContext.Provider>
-  );
+	// Delete a user
+	const deleteUser = async (userId: string): Promise<boolean> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			await deleteUserApi(userId);
+
+			setUsers((prevUsers) =>
+				prevUsers.filter((user) => user.id !== userId)
+			);
+			return true;
+		} catch (err) {
+			console.error("Error deleting user:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to delete user",
+				variant: "destructive",
+			});
+			return false;
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<UserContext.Provider
+			value={{
+				users,
+				addUser,
+				updateUser,
+				deleteUser,
+				initialUsersLoaded,
+				isLoading,
+				error,
+			}}
+		>
+			{children}
+		</UserContext.Provider>
+	);
 };
 
 export const useUserContext = () => {
-  const context = React.useContext(UserContext);
-  if (context === undefined) {
-    throw new Error("useUserContext must be used within a UserProvider");
-  }
-  return context;
+	const context = React.useContext(UserContext);
+	if (context === undefined) {
+		throw new Error("useUserContext must be used within a UserProvider");
+	}
+	return context;
 };

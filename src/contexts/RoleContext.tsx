@@ -1,82 +1,205 @@
-
 "use client";
 
 import * as React from "react";
 import type { Role } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+	fetchRoles,
+	createRole,
+	updateRole as updateRoleApi,
+	deleteRole as deleteRoleApi,
+	RoleCreateInput,
+	RoleUpdateInput,
+} from "@/lib/services/role-service";
 
 interface RoleContextType {
-  roles: Role[];
-  addRole: (role: Role) => void;
-  updateRole: (role: Role) => void;
-  deleteRole: (roleId: string) => void;
-  initialRolesLoaded: boolean;
+	roles: Role[];
+	addRole: (
+		role: Omit<Role, "id"> & {
+			permissionIds: string[];
+		}
+	) => Promise<Role | null>;
+	updateRole: (
+		roleId: string,
+		roleData: Omit<Role, "id" | "permissions"> & {
+			permissionIds: string[];
+		}
+	) => Promise<Role | null>;
+	deleteRole: (roleId: string) => Promise<boolean>;
+	initialRolesLoaded: boolean;
+	isLoading: boolean;
+	error: string | null;
 }
 
 const RoleContext = React.createContext<RoleContextType | undefined>(undefined);
 
-const initialRolesData: Role[] = [
-  { id: "1", name: "Administrator", description: "Full access to all system features.", permissions: ["manage_users", "manage_roles", "manage_voyages", "view_reports"] },
-  { id: "2", name: "Travel Agent", description: "Manages voyages and bookings.", permissions: ["manage_voyages", "view_bookings"] },
-  { id: "3", name: "Support Staff", description: "Assists users and manages support tickets.", permissions: ["view_users", "manage_support_tickets"] },
-];
+export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({
+	children,
+}) => {
+	const [roles, setRoles] = React.useState<Role[]>([]);
+	const [initialRolesLoaded, setInitialRolesLoaded] = React.useState(false);
+	const [isLoading, setIsLoading] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
+	const { toast } = useToast();
 
-const LOCAL_STORAGE_KEY = "voyageControlRoles";
+	// Fetch roles from API
+	const loadRoles = React.useCallback(async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const data = await fetchRoles();
+			setRoles(data.data);
+			setInitialRolesLoaded(true);
+		} catch (err) {
+			console.error("Error fetching roles:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error ? err.message : "Failed to load roles",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	}, [toast]);
 
-export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [roles, setRoles] = React.useState<Role[]>([]);
-  const [initialRolesLoaded, setInitialRolesLoaded] = React.useState(false);
+	// Load roles on component mount
+	React.useEffect(() => {
+		loadRoles();
+	}, [loadRoles]);
 
-  React.useEffect(() => {
-    try {
-      const storedRoles = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedRoles) {
-        setRoles(JSON.parse(storedRoles));
-      } else {
-        setRoles(initialRolesData);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialRolesData));
-      }
-    } catch (error) {
-      console.error("Failed to load roles from localStorage:", error);
-      setRoles(initialRolesData); // Fallback to initial data
-    }
-    setInitialRolesLoaded(true);
-  }, []);
+	// Add a new role
+	const addRole = async (
+		roleData: Omit<Role, "id"> & {
+			permissionIds: string[];
+		}
+	): Promise<Role | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const roleInput: RoleCreateInput = {
+				name: roleData.name,
+				description: roleData.description,
+				permissionIds: roleData.permissionIds,
+			};
 
-  React.useEffect(() => {
-    if (initialRolesLoaded) { // Only save if initial load is complete
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(roles));
-      } catch (error) {
-        console.error("Failed to save roles to localStorage:", error);
-      }
-    }
-  }, [roles, initialRolesLoaded]);
+			const newRole = await createRole(roleInput);
+			setRoles((prevRoles) => [...prevRoles, newRole]);
+			return newRole;
+		} catch (err) {
+			console.error("Error adding role:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error ? err.message : "Failed to add role",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const addRole = (role: Role) => {
-    setRoles((prevRoles) => [...prevRoles, role]);
-  };
+	// Update an existing role
+	const updateRole = async (
+		roleId: string,
+		roleData: Omit<Role, "id" | "permissions"> & {
+			permissionIds: string[];
+		}
+	): Promise<Role | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const roleInput: RoleUpdateInput = {
+				name: roleData.name,
+				description: roleData.description,
+				permissionIds: roleData.permissionIds,
+			};
 
-  const updateRole = (updatedRole: Role) => {
-    setRoles((prevRoles) =>
-      prevRoles.map((role) => (role.id === updatedRole.id ? updatedRole : role))
-    );
-  };
+			const updatedRole = await updateRoleApi(roleId, roleInput);
 
-  const deleteRole = (roleId: string) => {
-    setRoles((prevRoles) => prevRoles.filter((role) => role.id !== roleId));
-  };
+			setRoles((prevRoles) =>
+				prevRoles.map((role) =>
+					role.id === roleId ? updatedRole : role
+				)
+			);
+			return updatedRole;
+		} catch (err) {
+			console.error("Error updating role:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to update role",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  return (
-    <RoleContext.Provider value={{ roles, addRole, updateRole, deleteRole, initialRolesLoaded }}>
-      {children}
-    </RoleContext.Provider>
-  );
+	// Delete a role
+	const deleteRole = async (roleId: string): Promise<boolean> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			await deleteRoleApi(roleId);
+
+			setRoles((prevRoles) =>
+				prevRoles.filter((role) => role.id !== roleId)
+			);
+			return true;
+		} catch (err) {
+			console.error("Error deleting role:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to delete role",
+				variant: "destructive",
+			});
+			return false;
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<RoleContext.Provider
+			value={{
+				roles,
+				addRole,
+				updateRole,
+				deleteRole,
+				initialRolesLoaded,
+				isLoading,
+				error,
+			}}
+		>
+			{children}
+		</RoleContext.Provider>
+	);
 };
 
 export const useRoleContext = () => {
-  const context = React.useContext(RoleContext);
-  if (context === undefined) {
-    throw new Error("useRoleContext must be used within a RoleProvider");
-  }
-  return context;
+	const context = React.useContext(RoleContext);
+	if (context === undefined) {
+		throw new Error("useRoleContext must be used within a RoleProvider");
+	}
+	return context;
 };

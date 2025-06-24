@@ -1,0 +1,179 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            Int              @id @default(autoincrement())
+  name          String
+  email         String           @unique
+  passwordHash  String           @map("password_hash")
+  role          Role             @relation(fields: [roleId], references: [id])
+  roleId        Int              @map("role_id")
+  status        String           // Active, Inactive, Pending
+  avatarUrl     String?          @map("avatar_url")
+  lastLogin     DateTime?        @map("last_login")
+  dateJoined    DateTime         @default(now()) @map("date_joined")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at")
+  bookings      Booking[]
+  createdTickets SupportTicket[] @relation("CreatedTickets")
+  assignedTickets SupportTicket[] @relation("AssignedTickets")
+  ticketResponses TicketResponse[]
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+// Role model
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+// Permission model
+model Permission {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+// Role permissions junction model
+model RolePermission {
+  role          Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId        Int        @map("role_id")
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId  Int        @map("permission_id")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// Destination model
+model Destination {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  country     String
+  description String?
+  imageUrl    String?             @map("image_url")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+  voyages     VoyageDestination[]
+
+  @@map("destinations")
+}
+
+// Voyage model
+model Voyage {
+  id          Int                 @id @default(autoincrement())
+  name        String
+  startDate   DateTime?           @map("start_date")
+  endDate     DateTime?           @map("end_date")
+  price       Float               // Using Float instead of Decimal for SQLite
+  status      String              // Upcoming, Ongoing, Completed, Cancelled
+  description String?
+  imageUrl    String?             @map("image_url")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @default(now()) @updatedAt @map("updated_at")
+  destinations VoyageDestination[]
+  bookings    Booking[]
+
+  @@map("voyages")
+}
+
+// Voyage destinations junction model
+model VoyageDestination {
+  voyage        Voyage      @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  voyageId      Int         @map("voyage_id")
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  destinationId Int         @map("destination_id")
+  orderIndex    Int         @map("order_index")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@id([voyageId, destinationId])
+  @@map("voyage_destinations")
+}
+
+// Booking model
+model Booking {
+  id            Int       @id @default(autoincrement())
+  voyage        Voyage    @relation(fields: [voyageId], references: [id])
+  voyageId      Int       @map("voyage_id")
+  user          User      @relation(fields: [userId], references: [id])
+  userId        Int       @map("user_id")
+  bookingDate   DateTime  @default(now()) @map("booking_date")
+  status        String    // Confirmed, Pending, Cancelled
+  paymentStatus String    @map("payment_status") // Paid, Pending, Refunded
+  totalAmount   Float     @map("total_amount") // Using Float instead of Decimal for SQLite
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("bookings")
+}
+
+// Support ticket model
+model SupportTicket {
+  id          Int              @id @default(autoincrement())
+  user        User             @relation("CreatedTickets", fields: [userId], references: [id])
+  userId      Int              @map("user_id")
+  subject     String
+  description String
+  status      String           // Open, In Progress, Resolved, Closed
+  priority    String           // Low, Medium, High, Critical
+  assignedTo  User?            @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedToId Int?            @map("assigned_to")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  responses   TicketResponse[]
+
+  @@map("support_tickets")
+}
+
+// Support ticket response model
+model TicketResponse {
+  id          Int           @id @default(autoincrement())
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id])
+  ticketId    Int           @map("ticket_id")
+  user        User          @relation(fields: [userId], references: [id])
+  userId      Int           @map("user_id")
+  response    String
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@map("ticket_responses")
+}
+
+// Activity log model
+model ActivityLog {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int       @map("user_id")
+  actionType  String    @map("action_type")
+  entityType  String    @map("entity_type")
+  entityId    Int       @map("entity_id")
+  description String
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("activity_logs")
+}

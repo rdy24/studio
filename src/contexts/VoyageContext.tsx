@@ -1,87 +1,200 @@
-
 "use client";
 
 import * as React from "react";
-import type { Voyage } from "@/types";
+import type { Voyage, Destination } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+	fetchVoyages,
+	fetchVoyageById,
+	createVoyage,
+	updateVoyage as updateVoyageApi,
+	deleteVoyage as deleteVoyageApi,
+	VoyageCreateInput,
+	VoyageUpdateInput,
+} from "@/lib/services/voyage-frontend-service";
 
 interface VoyageContextType {
-  voyages: Voyage[];
-  addVoyage: (voyage: Voyage) => void;
-  updateVoyage: (voyage: Voyage) => void;
-  deleteVoyage: (voyageId: string) => void;
-  initialVoyagesLoaded: boolean;
+	voyages: Voyage[];
+	addVoyage: (
+		voyageData: Omit<VoyageCreateInput, "id">
+	) => Promise<Voyage | null>;
+	updateVoyage: (
+		voyageId: string,
+		voyageData: VoyageUpdateInput
+	) => Promise<Voyage | null>;
+	deleteVoyage: (voyageId: string) => Promise<boolean>;
+	initialVoyagesLoaded: boolean;
+	isLoading: boolean;
+	error: string | null;
+	getVoyageById: (id: string) => Voyage | undefined;
 }
 
-const VoyageContext = React.createContext<VoyageContextType | undefined>(undefined);
+const VoyageContext = React.createContext<VoyageContextType | undefined>(
+	undefined
+);
 
-const initialVoyagesData: Voyage[] = [
-  { id: "1", name: "Parisian Dream", destinationIds: ["1"], startDate: new Date("2024-09-01"), endDate: new Date("2024-09-07"), price: 1200, status: "Upcoming", description: "Explore the romantic city of Paris.", imageUrl: "https://placehold.co/600x400.png" },
-  { id: "2", name: "Italian Getaway", destinationIds: ["2"], startDate: new Date("2024-08-15"), endDate: new Date("2024-08-22"), price: 1500, status: "Upcoming", description: "Discover the ancient wonders of Rome.", imageUrl: "https://placehold.co/600x400.png" },
-];
+export const VoyageProvider: React.FC<{ children: React.ReactNode }> = ({
+	children,
+}) => {
+	const [voyages, setVoyages] = React.useState<Voyage[]>([]);
+	const [initialVoyagesLoaded, setInitialVoyagesLoaded] =
+		React.useState(false);
+	const [isLoading, setIsLoading] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
+	const { toast } = useToast();
 
-const LOCAL_STORAGE_KEY = "voyageControlVoyages";
+	// Fetch voyages from API
+	const loadVoyages = React.useCallback(async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const data = await fetchVoyages();
+			setVoyages(data.data);
+			setInitialVoyagesLoaded(true);
+		} catch (err) {
+			console.error("Error fetching voyages:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to load voyages",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	}, [toast]);
 
-export const VoyageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [voyages, setVoyages] = React.useState<Voyage[]>([]);
-  const [initialVoyagesLoaded, setInitialVoyagesLoaded] = React.useState(false);
+	// Load voyages on component mount
+	React.useEffect(() => {
+		loadVoyages();
+	}, [loadVoyages]);
 
-  React.useEffect(() => {
-    try {
-      const storedVoyages = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedVoyages) {
-        const parsedVoyages: Voyage[] = JSON.parse(storedVoyages).map((voyage: any) => ({
-          ...voyage,
-          startDate: voyage.startDate ? new Date(voyage.startDate) : undefined,
-          endDate: voyage.endDate ? new Date(voyage.endDate) : undefined,
-          price: Number(voyage.price) || 0,
-        }));
-        setVoyages(parsedVoyages);
-      } else {
-        setVoyages(initialVoyagesData);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialVoyagesData));
-      }
-    } catch (error) {
-      console.error("Failed to load voyages from localStorage:", error);
-      setVoyages(initialVoyagesData);
-    }
-    setInitialVoyagesLoaded(true);
-  }, []);
+	// Add a new voyage
+	const addVoyage = async (
+		voyageData: Omit<VoyageCreateInput, "id">
+	): Promise<Voyage | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const newVoyage = await createVoyage(
+				voyageData as VoyageCreateInput
+			);
+			setVoyages((prevVoyages) => [...prevVoyages, newVoyage]);
+			return newVoyage;
+		} catch (err) {
+			console.error("Error adding voyage:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error ? err.message : "Failed to add voyage",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  React.useEffect(() => {
-    if (initialVoyagesLoaded) {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(voyages));
-      } catch (error) {
-        console.error("Failed to save voyages to localStorage:", error);
-      }
-    }
-  }, [voyages, initialVoyagesLoaded]);
+	// Update an existing voyage
+	const updateVoyage = async (
+		voyageId: string,
+		voyageData: VoyageUpdateInput
+	): Promise<Voyage | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const updatedVoyage = await updateVoyageApi(voyageId, voyageData);
+			setVoyages((prevVoyages) =>
+				prevVoyages.map((voy) =>
+					voy.id === voyageId ? updatedVoyage : voy
+				)
+			);
+			return updatedVoyage;
+		} catch (err) {
+			console.error("Error updating voyage:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to update voyage",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const addVoyage = (voyage: Voyage) => {
-    setVoyages((prevVoyages) => [...prevVoyages, voyage]);
-  };
+	// Delete a voyage
+	const deleteVoyage = async (voyageId: string): Promise<boolean> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			await deleteVoyageApi(voyageId);
+			setVoyages((prevVoyages) =>
+				prevVoyages.filter((voy) => voy.id !== voyageId)
+			);
+			return true;
+		} catch (err) {
+			console.error("Error deleting voyage:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to delete voyage",
+				variant: "destructive",
+			});
+			return false;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const updateVoyage = (updatedVoyage: Voyage) => {
-    setVoyages((prevVoyages) =>
-      prevVoyages.map((voy) => (voy.id === updatedVoyage.id ? updatedVoyage : voy))
-    );
-  };
+	// Get a voyage by ID
+	const getVoyageById = (id: string): Voyage | undefined => {
+		return voyages.find((voyage) => voyage.id === id);
+	};
 
-  const deleteVoyage = (voyageId: string) => {
-    setVoyages((prevVoyages) => prevVoyages.filter((voy) => voy.id !== voyageId));
-  };
-
-  return (
-    <VoyageContext.Provider value={{ voyages, addVoyage, updateVoyage, deleteVoyage, initialVoyagesLoaded }}>
-      {children}
-    </VoyageContext.Provider>
-  );
+	return (
+		<VoyageContext.Provider
+			value={{
+				voyages,
+				addVoyage,
+				updateVoyage,
+				deleteVoyage,
+				initialVoyagesLoaded,
+				isLoading,
+				error,
+				getVoyageById,
+			}}
+		>
+			{children}
+		</VoyageContext.Provider>
+	);
 };
 
 export const useVoyageContext = () => {
-  const context = React.useContext(VoyageContext);
-  if (context === undefined) {
-    throw new Error("useVoyageContext must be used within a VoyageProvider");
-  }
-  return context;
+	const context = React.useContext(VoyageContext);
+	if (context === undefined) {
+		throw new Error(
+			"useVoyageContext must be used within a VoyageProvider"
+		);
+	}
+	return context;
 };

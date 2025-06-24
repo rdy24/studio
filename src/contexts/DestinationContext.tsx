@@ -1,88 +1,223 @@
-
 "use client";
 
 import * as React from "react";
 import type { Destination } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+	fetchDestinations,
+	createDestination,
+	updateDestination as updateDestinationApi,
+	deleteDestination as deleteDestinationApi,
+	DestinationCreateInput,
+	DestinationUpdateInput,
+} from "@/lib/services/destination-service";
 
 interface DestinationContextType {
-  destinations: Destination[];
-  addDestination: (destination: Destination) => void;
-  updateDestination: (destination: Destination) => void;
-  deleteDestination: (destinationId: string) => void;
-  initialDestinationsLoaded: boolean;
-  getDestinationNameById: (id: string) => string;
+	destinations: Destination[];
+	addDestination: (
+		destination: Omit<Destination, "id">
+	) => Promise<Destination | null>;
+	updateDestination: (
+		destinationId: string,
+		destinationData: Omit<Destination, "id">
+	) => Promise<Destination | null>;
+	deleteDestination: (destinationId: string) => Promise<boolean>;
+	initialDestinationsLoaded: boolean;
+	isLoading: boolean;
+	error: string | null;
+	getDestinationNameById: (id: string) => string;
 }
 
-const DestinationContext = React.createContext<DestinationContextType | undefined>(undefined);
+const DestinationContext = React.createContext<
+	DestinationContextType | undefined
+>(undefined);
 
-const initialDestinationsData: Destination[] = [
-  { id: "1", name: "Paris", country: "France", description: "The city of lights and love.", imageUrl: "https://placehold.co/600x400.png" },
-  { id: "2", name: "Rome", country: "Italy", description: "Ancient ruins and delicious pasta.", imageUrl: "https://placehold.co/600x400.png" },
-  { id: "3", name: "Tokyo", country: "Japan", description: "A vibrant blend of tradition and modernity.", imageUrl: "https://placehold.co/600x400.png" },
-];
+export const DestinationProvider: React.FC<{ children: React.ReactNode }> = ({
+	children,
+}) => {
+	const [destinations, setDestinations] = React.useState<Destination[]>([]);
+	const [initialDestinationsLoaded, setInitialDestinationsLoaded] =
+		React.useState(false);
+	const [isLoading, setIsLoading] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
+	const { toast } = useToast();
 
-const LOCAL_STORAGE_KEY = "voyageControlDestinations";
+	// Fetch destinations from API
+	const loadDestinations = React.useCallback(async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const data = await fetchDestinations();
+			setDestinations(data.data);
+			setInitialDestinationsLoaded(true);
+		} catch (err) {
+			console.error("Error fetching destinations:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to load destinations",
+				variant: "destructive",
+			});
+		} finally {
+			setIsLoading(false);
+		}
+	}, [toast]);
 
-export const DestinationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [destinations, setDestinations] = React.useState<Destination[]>([]);
-  const [initialDestinationsLoaded, setInitialDestinationsLoaded] = React.useState(false);
+	// Load destinations on component mount
+	React.useEffect(() => {
+		loadDestinations();
+	}, [loadDestinations]);
 
-  React.useEffect(() => {
-    try {
-      const storedDestinations = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (storedDestinations) {
-        setDestinations(JSON.parse(storedDestinations));
-      } else {
-        setDestinations(initialDestinationsData);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialDestinationsData));
-      }
-    } catch (error) {
-      console.error("Failed to load destinations from localStorage:", error);
-      setDestinations(initialDestinationsData);
-    }
-    setInitialDestinationsLoaded(true);
-  }, []);
+	// Add a new destination
+	const addDestination = async (
+		destinationData: Omit<Destination, "id">
+	): Promise<Destination | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const destinationInput: DestinationCreateInput = {
+				name: destinationData.name,
+				country: destinationData.country,
+				description: destinationData.description,
+				imageUrl: destinationData.imageUrl,
+			};
 
-  React.useEffect(() => {
-    if (initialDestinationsLoaded) {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(destinations));
-      } catch (error) {
-        console.error("Failed to save destinations to localStorage:", error);
-      }
-    }
-  }, [destinations, initialDestinationsLoaded]);
+			const newDestination = await createDestination(destinationInput);
+			setDestinations((prevDestinations) => [
+				...prevDestinations,
+				newDestination,
+			]);
+			return newDestination;
+		} catch (err) {
+			console.error("Error adding destination:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to add destination",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const addDestination = (destination: Destination) => {
-    setDestinations((prevDestinations) => [...prevDestinations, destination]);
-  };
+	// Update an existing destination
+	const updateDestination = async (
+		destinationId: string,
+		destinationData: Omit<Destination, "id">
+	): Promise<Destination | null> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const destinationInput: DestinationUpdateInput = {
+				name: destinationData.name,
+				country: destinationData.country,
+				description: destinationData.description,
+				imageUrl: destinationData.imageUrl,
+			};
 
-  const updateDestination = (updatedDestination: Destination) => {
-    setDestinations((prevDestinations) =>
-      prevDestinations.map((dest) => (dest.id === updatedDestination.id ? updatedDestination : dest))
-    );
-  };
+			const updatedDestination = await updateDestinationApi(
+				destinationId,
+				destinationInput
+			);
 
-  const deleteDestination = (destinationId: string) => {
-    setDestinations((prevDestinations) => prevDestinations.filter((dest) => dest.id !== destinationId));
-  };
+			setDestinations((prevDestinations) =>
+				prevDestinations.map((dest) =>
+					dest.id === destinationId ? updatedDestination : dest
+				)
+			);
+			return updatedDestination;
+		} catch (err) {
+			console.error("Error updating destination:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to update destination",
+				variant: "destructive",
+			});
+			return null;
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-  const getDestinationNameById = (id: string): string => {
-    const destination = destinations.find(d => d.id === id);
-    return destination ? destination.name : "Unknown";
-  };
+	// Delete a destination
+	const deleteDestination = async (
+		destinationId: string
+	): Promise<boolean> => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			await deleteDestinationApi(destinationId);
 
-  return (
-    <DestinationContext.Provider value={{ destinations, addDestination, updateDestination, deleteDestination, initialDestinationsLoaded, getDestinationNameById }}>
-      {children}
-    </DestinationContext.Provider>
-  );
+			setDestinations((prevDestinations) =>
+				prevDestinations.filter((dest) => dest.id !== destinationId)
+			);
+			return true;
+		} catch (err) {
+			console.error("Error deleting destination:", err);
+			setError(
+				err instanceof Error ? err.message : "An unknown error occurred"
+			);
+			toast({
+				title: "Error",
+				description:
+					err instanceof Error
+						? err.message
+						: "Failed to delete destination",
+				variant: "destructive",
+			});
+			return false;
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const getDestinationNameById = (id: string): string => {
+		const destination = destinations.find((d) => d.id === id);
+		return destination ? destination.name : "Unknown";
+	};
+
+	return (
+		<DestinationContext.Provider
+			value={{
+				destinations,
+				addDestination,
+				updateDestination,
+				deleteDestination,
+				initialDestinationsLoaded,
+				isLoading,
+				error,
+				getDestinationNameById,
+			}}
+		>
+			{children}
+		</DestinationContext.Provider>
+	);
 };
 
 export const useDestinationContext = () => {
-  const context = React.useContext(DestinationContext);
-  if (context === undefined) {
-    throw new Error("useDestinationContext must be used within a DestinationProvider");
-  }
-  return context;
+	const context = React.useContext(DestinationContext);
+	if (context === undefined) {
+		throw new Error(
+			"useDestinationContext must be used within a DestinationProvider"
+		);
+	}
+	return context;
 };

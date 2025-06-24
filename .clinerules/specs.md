@@ -1,18 +1,5 @@
 # Voyage Control
 
-## Tech Stack
-
--   **Framework**: Next.js 15 with React 18
--   **Language**: TypeScript
--   **Styling**: Tailwind CSS with shadcn/ui components
--   **Package Manager**: npm
--   **Database**: Local storage (for prototype), but designed for SQLite implementation
--   **State Management**: React Context API
--   **Authentication**: Custom authentication (email/password)
--   **Date Handling**: date-fns
--   **Charts**: Recharts
--   **Form Handling**: react-hook-form with zod validation
-
 ## Features
 
 ### User Management
