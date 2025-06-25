@@ -1,5 +1,3 @@
-"use client";
-
 import { Users, Ship, Briefcase, Anchor, User } from "lucide-react";
 import {
 	Card,
@@ -8,23 +6,9 @@ import {
 	CardTitle,
 	CardDescription,
 } from "@/components/ui/card";
-import {
-	Bar,
-	ResponsiveContainer,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	Legend,
-	BarChart,
-} from "recharts";
-import {
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@/components/ui/chart";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
+import ChartWrapper from "./ChartWrapper";
 
 const MetricCard = ({
 	title,
@@ -177,51 +161,7 @@ export default async function DashboardPage() {
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2">
-				<Card className="shadow-lg w-full">
-					<CardHeader>
-						<CardTitle className="text-xl text-primary">
-							Monthly Bookings
-						</CardTitle>
-						<CardDescription>
-							Track booking trends over the past 6 months.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<ChartContainer
-							config={{
-								bookings: {
-									label: "Bookings",
-									color: "hsl(var(--primary))",
-								},
-							}}
-							className="h-[300px] w-full"
-						>
-							<BarChart
-								data={monthlyBookingsData}
-								accessibilityLayer
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="month"
-									tickLine={false}
-									tickMargin={10}
-									axisLine={false}
-								/>
-								<YAxis tickLine={false} axisLine={false} />
-								<ChartTooltip
-									cursor={false}
-									content={<ChartTooltipContent hideLabel />}
-								/>
-								<Legend />
-								<Bar
-									dataKey="bookings"
-									fill="var(--color-bookings)"
-									radius={4}
-								/>
-							</BarChart>
-						</ChartContainer>
-					</CardContent>
-				</Card>
+				<ChartWrapper data={monthlyBookingsData} />
 
 				<Card className="shadow-lg w-full">
 					<CardHeader>
