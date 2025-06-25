@@ -4,8 +4,27 @@ import { prisma } from "@/lib/prisma";
 import { voyageSchema } from "@/lib/validations/voyage";
 import { handleApiError, getPaginationParams } from "@/lib/api-utils";
 
+// Types for Voyage response
+interface VoyageResponse {
+	id: string;
+	name: string;
+	startDate: Date;
+	endDate: Date;
+	price: number;
+	status: string;
+	description: string;
+	imageUrl: string;
+	destinations: {
+		id: string;
+		name: string;
+		country: string;
+		description: string;
+		imageUrl: string;
+	}[];
+}
+
 // Helper function to transform voyage for response
-function transformVoyageForResponse(voyage: any) {
+function transformVoyageForResponse(voyage: any): VoyageResponse {
 	return {
 		id: voyage.id.toString(),
 		name: voyage.name,
@@ -15,13 +34,16 @@ function transformVoyageForResponse(voyage: any) {
 		status: voyage.status,
 		description: voyage.description,
 		imageUrl: voyage.imageUrl,
-		destinations: voyage.destinations?.map((destination: any) => ({
-			id: destination.id.toString(),
-			name: destination.name,
-			country: destination.country,
-			description: destination.description,
-			imageUrl: destination.imageUrl,
-		})),
+		destinations: (voyage.destinations || []).map((d: any) => {
+			const dest = d.destination || d; // support both structures
+			return {
+				id: dest.id?.toString?.() || "",
+				name: dest.name || "",
+				country: dest.country || "",
+				description: dest.description || "",
+				imageUrl: dest.imageUrl || "",
+			};
+		}),
 	};
 }
 
@@ -35,7 +57,7 @@ export async function GET(request: NextRequest) {
 		const { page, perPage, skip } = getPaginationParams(searchParams);
 
 		// Build filter conditions
-		const where: any = {};
+		const where: Record<string, any> = {};
 
 		if (search) {
 			where.OR = [
@@ -54,51 +76,33 @@ export async function GET(request: NextRequest) {
 				where,
 				skip,
 				take: perPage,
-				orderBy: {
-					createdAt: "desc",
-				},
+				orderBy: { createdAt: "desc" },
 				include: {
 					destinations: {
 						include: {
 							destination: true,
 						},
-						orderBy: {
-							orderIndex: "asc",
-						},
+						orderBy: { orderIndex: "asc" },
 					},
 				},
 			}),
 			prisma.voyage.count({ where }),
 		]);
 
-		// Filter by destination if provided
-		let filteredVoyages = voyages;
-		if (destinationId) {
-			const destId = parseInt(destinationId);
-			filteredVoyages = voyages.filter((voyage) =>
-				voyage.destinations.some((vd) => vd.destinationId === destId)
-			);
-		}
-
 		// Transform voyages to match frontend format
-		const transformedVoyages = filteredVoyages.map((voyage) => {
-			return transformVoyageForResponse({
-				...voyage,
-				destinations: voyage.destinations.map((vd) => vd.destination),
-			});
-		});
+		const transformedVoyages: VoyageResponse[] = voyages.map(
+			transformVoyageForResponse
+		);
 
 		return NextResponse.json({
 			data: transformedVoyages,
-			total: destinationId ? filteredVoyages.length : total,
+			total,
 			page,
 			per_page: perPage,
-			total_pages: Math.ceil(
-				(destinationId ? filteredVoyages.length : total) / perPage
-			),
+			total_pages: Math.ceil(total / perPage),
 		});
-	} catch (error) {
-		console.error("GET /api/voyages error:", error);
+	} catch (error: any) {
+		console.error("GET /api/voyages error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

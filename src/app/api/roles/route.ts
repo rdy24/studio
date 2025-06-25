@@ -4,8 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { roleCreateSchema } from "@/lib/validations/role";
 import { handleApiError, getPaginationParams } from "@/lib/api-utils";
 
+// Types for Role response
+interface RoleResponse {
+	id: string;
+	name: string;
+	description?: string;
+	permissions: string[];
+}
+
 // Helper function to transform role for response
-function transformRoleForResponse(role: any) {
+function transformRoleForResponse(role: any): RoleResponse {
 	return {
 		id: role.id.toString(),
 		name: role.name,
@@ -22,7 +30,7 @@ export async function GET(request: NextRequest) {
 		const { page, perPage, skip } = getPaginationParams(searchParams);
 
 		// Build filter conditions
-		const where: any = {};
+		const where: Record<string, any> = {};
 
 		if (search) {
 			where.OR = [
@@ -39,24 +47,22 @@ export async function GET(request: NextRequest) {
 					permissions: {
 						include: {
 							permission: {
-								select: {
-									name: true,
-								},
+								select: { name: true },
 							},
 						},
 					},
 				},
 				skip,
 				take: perPage,
-				orderBy: {
-					createdAt: "desc",
-				},
+				orderBy: { createdAt: "desc" },
 			}),
 			prisma.role.count({ where }),
 		]);
 
 		// Transform roles to match frontend format
-		const transformedRoles = roles.map(transformRoleForResponse);
+		const transformedRoles: RoleResponse[] = roles.map(
+			transformRoleForResponse
+		);
 
 		return NextResponse.json({
 			data: transformedRoles,
@@ -65,8 +71,8 @@ export async function GET(request: NextRequest) {
 			per_page: perPage,
 			total_pages: Math.ceil(total / perPage),
 		});
-	} catch (error) {
-		console.error("POST /api/roles error:", error);
+	} catch (error: any) {
+		console.error("GET /api/roles error:", error?.message || error);
 		return handleApiError(error);
 	}
 }
@@ -79,50 +85,27 @@ export async function POST(request: NextRequest) {
 		// Validate request body
 		const validatedData = roleCreateSchema.parse(body);
 
-		// Check if role name already exists
-		const existingRole = await prisma.role.findUnique({
-			where: { name: validatedData.name },
-		});
-
-		if (existingRole) {
-			return NextResponse.json(
-				{ error: "Role name already exists" },
-				{ status: 400 }
-			);
-		}
-
-		// Create role with permissions
+		// Create role
 		const role = await prisma.role.create({
 			data: {
 				name: validatedData.name,
 				description: validatedData.description,
-				permissions: {
-					create: validatedData.permissionIds.map((permissionId) => ({
-						permission: {
-							connect: { id: parseInt(permissionId) },
-						},
-					})),
-				},
 			},
 			include: {
 				permissions: {
 					include: {
-						permission: {
-							select: {
-								name: true,
-							},
-						},
+						permission: { select: { name: true } },
 					},
 				},
 			},
 		});
 
 		// Transform role to match frontend format
-		const transformedRole = transformRoleForResponse(role);
+		const transformedRole: RoleResponse = transformRoleForResponse(role);
 
 		return NextResponse.json(transformedRole, { status: 201 });
-	} catch (error) {
-		console.error("POST /api/roles error:", error);
+	} catch (error: any) {
+		console.error("POST /api/roles error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

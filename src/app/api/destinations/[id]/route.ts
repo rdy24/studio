@@ -4,6 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { destinationUpdateSchema } from "@/lib/validations/destination";
 import { handleApiError } from "@/lib/api-utils";
 
+// Types for Destination response
+interface DestinationResponse {
+	id: string;
+	name: string;
+	country: string;
+	description: string;
+	imageUrl: string;
+}
+
 // Helper function to transform destination for response
 function transformDestinationForResponse(destination: any) {
 	return {
@@ -22,32 +31,30 @@ export async function GET(
 ) {
 	try {
 		const id = parseInt(params.id);
-
 		if (isNaN(id)) {
 			return NextResponse.json(
 				{ error: "Invalid destination ID" },
 				{ status: 400 }
 			);
 		}
-
 		const destination = await prisma.destination.findUnique({
 			where: { id },
 		});
-
 		if (!destination) {
 			return NextResponse.json(
 				{ error: "Destination not found" },
 				{ status: 404 }
 			);
 		}
-
 		// Transform destination to match frontend format
-		const transformedDestination =
+		const transformedDestination: DestinationResponse =
 			transformDestinationForResponse(destination);
-
 		return NextResponse.json(transformedDestination);
-	} catch (error) {
-		console.error("GET /api/destinations/[id] error:", error);
+	} catch (error: any) {
+		console.error(
+			"GET /api/destinations/[id] error:",
+			error?.message || error
+		);
 		return handleApiError(error);
 	}
 }
@@ -59,33 +66,16 @@ export async function PUT(
 ) {
 	try {
 		const id = parseInt(params.id);
-
 		if (isNaN(id)) {
 			return NextResponse.json(
 				{ error: "Invalid destination ID" },
 				{ status: 400 }
 			);
 		}
-
 		const body = await request.json();
-
 		// Validate request body
 		const validatedData = destinationUpdateSchema.parse(body);
-
-		// Check if destination exists
-		const existingDestination = await prisma.destination.findUnique({
-			where: { id },
-		});
-
-		if (!existingDestination) {
-			return NextResponse.json(
-				{ error: "Destination not found" },
-				{ status: 404 }
-			);
-		}
-
-		// Update destination
-		const updatedDestination = await prisma.destination.update({
+		const destination = await prisma.destination.update({
 			where: { id },
 			data: {
 				name: validatedData.name,
@@ -94,14 +84,15 @@ export async function PUT(
 				imageUrl: validatedData.imageUrl,
 			},
 		});
-
 		// Transform destination to match frontend format
-		const transformedDestination =
-			transformDestinationForResponse(updatedDestination);
-
+		const transformedDestination: DestinationResponse =
+			transformDestinationForResponse(destination);
 		return NextResponse.json(transformedDestination);
-	} catch (error) {
-		console.error("PUT /api/destinations/[id] error:", error);
+	} catch (error: any) {
+		console.error(
+			"PUT /api/destinations/[id] error:",
+			error?.message || error
+		);
 		return handleApiError(error);
 	}
 }

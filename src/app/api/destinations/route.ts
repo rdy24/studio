@@ -4,8 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { destinationCreateSchema } from "@/lib/validations/destination";
 import { handleApiError, getPaginationParams } from "@/lib/api-utils";
 
+// Types for Destination
+interface Destination {
+	id: string;
+	name: string;
+	country: string;
+	description: string;
+	imageUrl: string;
+}
+
 // Helper function to transform destination for response
-function transformDestinationForResponse(destination: any) {
+function transformDestinationForResponse(destination: any): Destination {
 	return {
 		id: destination.id.toString(),
 		name: destination.name,
@@ -23,7 +32,7 @@ export async function GET(request: NextRequest) {
 		const { page, perPage, skip } = getPaginationParams(searchParams);
 
 		// Build filter conditions
-		const where: any = {};
+		const where: Record<string, any> = {};
 
 		if (search) {
 			where.OR = [
@@ -39,15 +48,13 @@ export async function GET(request: NextRequest) {
 				where,
 				skip,
 				take: perPage,
-				orderBy: {
-					createdAt: "desc",
-				},
+				orderBy: { createdAt: "desc" },
 			}),
 			prisma.destination.count({ where }),
 		]);
 
 		// Transform destinations to match frontend format
-		const transformedDestinations = destinations.map(
+		const transformedDestinations: Destination[] = destinations.map(
 			transformDestinationForResponse
 		);
 
@@ -58,8 +65,8 @@ export async function GET(request: NextRequest) {
 			per_page: perPage,
 			total_pages: Math.ceil(total / perPage),
 		});
-	} catch (error) {
-		console.error("GET /api/destinations error:", error);
+	} catch (error: any) {
+		console.error("GET /api/destinations error:", error?.message || error);
 		return handleApiError(error);
 	}
 }
@@ -87,8 +94,8 @@ export async function POST(request: NextRequest) {
 			transformDestinationForResponse(destination);
 
 		return NextResponse.json(transformedDestination, { status: 201 });
-	} catch (error) {
-		console.error("POST /api/destinations error:", error);
+	} catch (error: any) {
+		console.error("POST /api/destinations error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

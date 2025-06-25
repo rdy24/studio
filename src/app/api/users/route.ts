@@ -9,6 +9,19 @@ import {
 	getPaginationParams,
 } from "@/lib/api-utils";
 
+// Types for User response (matches transformUserForResponse)
+interface UserResponse {
+	id: string;
+	name: string;
+	email: string;
+	role: string;
+	roleId: number;
+	status: string;
+	avatar: string | null;
+	lastLogin: Date | null;
+	dateJoined: Date;
+}
+
 // GET /api/users - Get all users
 export async function GET(request: NextRequest) {
 	try {
@@ -21,7 +34,7 @@ export async function GET(request: NextRequest) {
 		const { page, perPage, skip } = getPaginationParams(searchParams);
 
 		// Build filter conditions
-		const where: any = {};
+		const where: Record<string, any> = {};
 
 		if (search) {
 			where.OR = [
@@ -59,7 +72,9 @@ export async function GET(request: NextRequest) {
 		]);
 
 		// Transform users to match frontend format
-		const transformedUsers = users.map(transformUserForResponse);
+		const transformedUsers: UserResponse[] = users.map(
+			transformUserForResponse
+		);
 
 		return NextResponse.json({
 			data: transformedUsers,
@@ -68,7 +83,8 @@ export async function GET(request: NextRequest) {
 			per_page: perPage,
 			total_pages: Math.ceil(total / perPage),
 		});
-	} catch (error) {
+	} catch (error: any) {
+		console.error("GET /api/users error:", error?.message || error);
 		return handleApiError(error);
 	}
 }
@@ -77,53 +93,37 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
-
 		// Validate request body
 		const validatedData = userCreateSchema.parse(body);
-
-		// Check if email already exists
-		const existingUser = await prisma.user.findUnique({
-			where: { email: validatedData.email },
-		});
-
-		if (existingUser) {
+		if (!validatedData.password) {
 			return NextResponse.json(
-				{ error: "Email already exists" },
+				{ error: "Password is required" },
 				{ status: 400 }
 			);
 		}
-
-		// Hash password with bcrypt
-		const passwordHash = await bcrypt.hash(
-			validatedData.password || "defaultpassword",
-			10
-		);
-
+		// Hash password
+		const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 		// Create user
 		const user = await prisma.user.create({
 			data: {
 				name: validatedData.name,
 				email: validatedData.email,
-				passwordHash,
-				roleId: validatedData.roleId,
+				passwordHash: hashedPassword,
 				status: validatedData.status,
-				avatarUrl: validatedData.avatarUrl || null,
-				dateJoined: new Date(),
+				roleId: validatedData.roleId,
+				avatarUrl: validatedData.avatarUrl ?? null,
 			},
 			include: {
 				role: {
-					select: {
-						name: true,
-					},
+					select: { name: true },
 				},
 			},
 		});
-
 		// Transform user to match frontend format
 		const transformedUser = transformUserForResponse(user);
-
 		return NextResponse.json(transformedUser, { status: 201 });
-	} catch (error) {
+	} catch (error: any) {
+		console.error("POST /api/users error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

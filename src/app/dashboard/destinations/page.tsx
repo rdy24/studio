@@ -363,7 +363,7 @@ export default function DestinationManagementPage() {
 						placeholder="Search destinations..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
-						className="pl-10 w-full md:w-1/2 lg:w-1/3"
+						className="pl-10 w-full md:w-[300px]"
 					/>
 				</div>
 				{isLoading && (

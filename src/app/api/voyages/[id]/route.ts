@@ -4,6 +4,25 @@ import { prisma } from "@/lib/prisma";
 import { voyageUpdateSchema } from "@/lib/validations/voyage";
 import { handleApiError } from "@/lib/api-utils";
 
+// Types for Voyage response
+interface VoyageResponse {
+	id: string;
+	name: string;
+	startDate: Date;
+	endDate: Date;
+	price: number;
+	status: string;
+	description: string;
+	imageUrl: string;
+	destinations: {
+		id: string;
+		name: string;
+		country: string;
+		description: string;
+		imageUrl: string;
+	}[];
+}
+
 // Helper function to transform voyage for response
 function transformVoyageForResponse(voyage: any) {
 	return {
@@ -32,14 +51,12 @@ export async function GET(
 ) {
 	try {
 		const id = parseInt(params.id);
-
 		if (isNaN(id)) {
 			return NextResponse.json(
 				{ error: "Invalid ID format" },
 				{ status: 400 }
 			);
 		}
-
 		const voyage = await prisma.voyage.findUnique({
 			where: { id },
 			include: {
@@ -47,29 +64,22 @@ export async function GET(
 					include: {
 						destination: true,
 					},
-					orderBy: {
-						orderIndex: "asc",
-					},
+					orderBy: { orderIndex: "asc" },
 				},
 			},
 		});
-
 		if (!voyage) {
 			return NextResponse.json(
 				{ error: "Voyage not found" },
 				{ status: 404 }
 			);
 		}
-
 		// Transform voyage to match frontend format
-		const transformedVoyage = transformVoyageForResponse({
-			...voyage,
-			destinations: voyage.destinations.map((vd) => vd.destination),
-		});
-
+		const transformedVoyage: VoyageResponse =
+			transformVoyageForResponse(voyage);
 		return NextResponse.json(transformedVoyage);
-	} catch (error) {
-		console.error(`GET /api/voyages/${params.id} error:`, error);
+	} catch (error: any) {
+		console.error("GET /api/voyages/[id] error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

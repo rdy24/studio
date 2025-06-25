@@ -1,0 +1,5 @@
+{
+	"yaml.schemas": {
+		"swaggerviewer:openapi": "file:///Users/mac/study/ai/studio/.clinerules/api-schema.yaml"
+	}
+}

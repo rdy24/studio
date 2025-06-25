@@ -5,6 +5,19 @@ import { prisma } from "@/lib/prisma";
 import { userUpdateSchema } from "@/lib/validations/user";
 import { handleApiError, transformUserForResponse } from "@/lib/api-utils";
 
+// Types for User response (matches transformUserForResponse)
+interface UserResponse {
+	id: string;
+	name: string;
+	email: string;
+	role: string;
+	roleId: number;
+	status: string;
+	avatar: string | null;
+	lastLogin: Date | null;
+	dateJoined: Date;
+}
+
 // GET /api/users/[id] - Get a specific user
 export async function GET(
 	request: NextRequest,
@@ -12,14 +25,12 @@ export async function GET(
 ) {
 	try {
 		const id = parseInt(params.id);
-
 		if (isNaN(id)) {
 			return NextResponse.json(
 				{ error: "Invalid user ID" },
 				{ status: 400 }
 			);
 		}
-
 		const user = await prisma.user.findUnique({
 			where: { id },
 			include: {
@@ -30,19 +41,17 @@ export async function GET(
 				},
 			},
 		});
-
 		if (!user) {
 			return NextResponse.json(
 				{ error: "User not found" },
 				{ status: 404 }
 			);
 		}
-
 		// Transform user to match frontend format
-		const transformedUser = transformUserForResponse(user);
-
+		const transformedUser: UserResponse = transformUserForResponse(user);
 		return NextResponse.json(transformedUser);
-	} catch (error) {
+	} catch (error: any) {
+		console.error("GET /api/users/[id] error:", error?.message || error);
 		return handleApiError(error);
 	}
 }
@@ -54,85 +63,42 @@ export async function PUT(
 ) {
 	try {
 		const id = parseInt(params.id);
-
 		if (isNaN(id)) {
 			return NextResponse.json(
 				{ error: "Invalid user ID" },
 				{ status: 400 }
 			);
 		}
-
 		const body = await request.json();
-
 		// Validate request body
 		const validatedData = userUpdateSchema.parse(body);
-
-		// Check if user exists
-		const existingUser = await prisma.user.findUnique({
-			where: { id },
-		});
-
-		if (!existingUser) {
-			return NextResponse.json(
-				{ error: "User not found" },
-				{ status: 404 }
-			);
-		}
-
-		// Check if email is already taken by another user
-		if (validatedData.email !== existingUser.email) {
-			const emailExists = await prisma.user.findUnique({
-				where: { email: validatedData.email },
-			});
-
-			if (emailExists) {
-				return NextResponse.json(
-					{ error: "Email already exists" },
-					{ status: 400 }
-				);
-			}
-		}
-
-		// Prepare update data
-		const updateData: any = {
+		let updateData: any = {
 			name: validatedData.name,
 			email: validatedData.email,
-			roleId: validatedData.roleId,
 			status: validatedData.status,
-			avatarUrl: validatedData.avatarUrl,
-			// Update lastLogin if status changed to Active
-			...(validatedData.status === "Active" &&
-			existingUser.status !== "Active"
-				? { lastLogin: new Date() }
-				: {}),
+			roleId: validatedData.roleId,
+			avatarUrl: validatedData.avatarUrl ?? null,
 		};
-
-		// Hash password if provided
 		if (validatedData.password) {
 			updateData.passwordHash = await bcrypt.hash(
 				validatedData.password,
 				10
 			);
 		}
-
-		// Update user
-		const updatedUser = await prisma.user.update({
+		const user = await prisma.user.update({
 			where: { id },
 			data: updateData,
 			include: {
 				role: {
-					select: {
-						name: true,
-					},
+					select: { name: true },
 				},
 			},
 		});
-
 		// Transform user to match frontend format
-		const transformedUser = transformUserForResponse(updatedUser);
-
+		const transformedUser: UserResponse = transformUserForResponse(user);
 		return NextResponse.json(transformedUser);
-	} catch (error) {
+	} catch (error: any) {
+		console.error("PUT /api/users/[id] error:", error?.message || error);
 		return handleApiError(error);
 	}
 }

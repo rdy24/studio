@@ -1,5 +1,6 @@
 "use client";
 
+import { Users, Ship, Briefcase, Anchor, User } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -7,8 +8,6 @@ import {
 	CardTitle,
 	CardDescription,
 } from "@/components/ui/card";
-import { Users, Ship, Briefcase, Anchor, User } from "lucide-react";
-import type { MetricCardProps } from "@/types";
 import {
 	Bar,
 	ResponsiveContainer,
@@ -24,6 +23,8 @@ import {
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
+import { prisma } from "@/lib/prisma";
+import { format } from "date-fns";
 
 const MetricCard = ({
 	title,
@@ -32,7 +33,14 @@ const MetricCard = ({
 	change,
 	changeType,
 	description,
-}: MetricCardProps) => (
+}: {
+	title: string;
+	value: string | number;
+	icon: any;
+	change?: string;
+	changeType?: "positive" | "negative";
+	description?: string;
+}) => (
 	<Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
 		<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 			<CardTitle className="text-sm font-medium text-muted-foreground">
@@ -62,47 +70,95 @@ const MetricCard = ({
 	</Card>
 );
 
-const monthlyBookingsData = [
-	{ month: "Jan", bookings: 120 },
-	{ month: "Feb", bookings: 150 },
-	{ month: "Mar", bookings: 200 },
-	{ month: "Apr", bookings: 180 },
-	{ month: "May", bookings: 220 },
-	{ month: "Jun", bookings: 250 },
-];
+export default async function DashboardPage() {
+	// Fetch metrics from DB
+	const [
+		userCount,
+		voyageCount,
+		destinationCount,
+		bookingCount,
+		bookings,
+		activities,
+		activeVoyages,
+	] = await Promise.all([
+		prisma.user.count(),
+		prisma.voyage.count(),
+		prisma.destination.count(),
+		prisma.booking.count({
+			where: {
+				bookingDate: {
+					gte: new Date(
+						new Date().getFullYear(),
+						new Date().getMonth(),
+						1
+					),
+					lte: new Date(),
+				},
+			},
+		}),
+		prisma.booking.findMany({
+			where: {
+				bookingDate: {
+					gte: new Date(
+						new Date().getFullYear(),
+						new Date().getMonth() - 5,
+						1
+					),
+					lte: new Date(),
+				},
+			},
+			select: { bookingDate: true },
+		}),
+		prisma.activityLog.findMany({
+			orderBy: { createdAt: "desc" },
+			take: 4,
+			include: { user: true },
+		}),
+		prisma.voyage.count({ where: { status: "Ongoing" } }),
+	]);
 
-const chartConfig = {
-	bookings: {
-		label: "Bookings",
-		color: "hsl(var(--primary))",
-	},
-};
+	// Monthly bookings chart data
+	const monthlyBookingsData = Array.from({ length: 6 }).map((_, i) => {
+		const month = format(
+			new Date(
+				new Date().getFullYear(),
+				new Date().getMonth() - 5 + i,
+				1
+			),
+			"MMM"
+		);
+		const count = bookings.filter(
+			(b) =>
+				new Date(b.bookingDate).getMonth() ===
+				new Date(
+					new Date().getFullYear(),
+					new Date().getMonth() - 5 + i,
+					1
+				).getMonth()
+		).length;
+		return { month, bookings: count };
+	});
 
-export default function DashboardPage() {
-	const metrics: MetricCardProps[] = [
+	const metrics = [
 		{
 			title: "Total Users",
-			value: "1,250",
+			value: userCount,
 			icon: Users,
-			change: "+15% from last month",
-			changeType: "positive",
 		},
 		{
 			title: "Active Voyages",
-			value: "78",
+			value: activeVoyages,
 			icon: Ship,
 			description: "Currently ongoing trips",
 		},
 		{
 			title: "Bookings This Month",
-			value: "320",
+			value: bookingCount,
 			icon: Briefcase,
-			change: "-5% from last month",
-			changeType: "negative",
 		},
 		{
 			title: "Destinations Served",
-			value: "45",
+			value: destinationCount,
 			icon: Anchor,
 			description: "Unique locations covered",
 		},
@@ -132,7 +188,12 @@ export default function DashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<ChartContainer
-							config={chartConfig}
+							config={{
+								bookings: {
+									label: "Bookings",
+									color: "hsl(var(--primary))",
+								},
+							}}
 							className="h-[300px] w-full"
 						>
 							<BarChart
@@ -145,7 +206,6 @@ export default function DashboardPage() {
 									tickLine={false}
 									tickMargin={10}
 									axisLine={false}
-									tickFormatter={(value) => value.slice(0, 3)}
 								/>
 								<YAxis tickLine={false} axisLine={false} />
 								<ChartTooltip
@@ -174,28 +234,7 @@ export default function DashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<ul className="space-y-3">
-							{[
-								{
-									user: "Alice",
-									action: "added a new voyage to The Maldives.",
-									time: "2 hours ago",
-								},
-								{
-									user: "Bob",
-									action: "updated user profile for client 'John Doe'.",
-									time: "5 hours ago",
-								},
-								{
-									user: "Charlie",
-									action: "processed 15 new bookings.",
-									time: "1 day ago",
-								},
-								{
-									user: "System",
-									action: "generated EOM financial report.",
-									time: "2 days ago",
-								},
-							].map((activity, index) => (
+							{activities.map((activity, index) => (
 								<li
 									key={index}
 									className="flex items-start space-x-2 sm:space-x-3"
@@ -208,12 +247,16 @@ export default function DashboardPage() {
 									<div>
 										<p className="text-sm">
 											<span className="font-medium text-primary">
-												{activity.user}
+												{activity.user?.name ||
+													"System"}
 											</span>{" "}
-											{activity.action}
+											{activity.description}
 										</p>
 										<p className="text-xs text-muted-foreground">
-											{activity.time}
+											{format(
+												new Date(activity.createdAt),
+												"dd MMM yyyy HH:mm"
+											)}
 										</p>
 									</div>
 								</li>
