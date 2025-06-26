@@ -1,0 +1,127 @@
+{
+	"info": {
+		"name": "Voyage Control - Users API (Simple)",
+		"description": "Simple CRUD API collection for Users module testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Users",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "Get All Users with Pagination",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users?page=1&limit=5",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "5"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Search Users",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users?search=alice",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"],
+					"query": [
+						{
+							"key": "search",
+							"value": "alice"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Get User by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Create User",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"roleId\": \"1\",\n  \"status\": \"Active\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "Update User",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"John Doe Updated\",\n  \"status\": \"Inactive\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "Delete User",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		}
+	]
+}
