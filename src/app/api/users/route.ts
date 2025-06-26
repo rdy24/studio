@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-
-// Validation schemas
-const createUserSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-	email: z.string().email("Invalid email format"),
-	roleId: z.string().min(1, "Role ID is required"),
-	status: z.enum(["Active", "Inactive", "Pending"]).default("Pending"),
-	avatar: z.string().url().optional(),
-});
-
-const getUsersQuerySchema = z.object({
-	page: z
-		.string()
-		.nullable()
-		.optional()
-		.transform((val) => (val ? parseInt(val) : 1)),
-	limit: z
-		.string()
-		.nullable()
-		.optional()
-		.transform((val) => (val ? parseInt(val) : 10)),
-	search: z.string().nullable().optional(),
-	status: z.enum(["Active", "Inactive", "Pending"]).nullable().optional(),
-	roleId: z.string().nullable().optional(),
-});
+import {
+	createUserSchema,
+	getUsersQuerySchema,
+	type CreateUserInput,
+	type GetUsersQuery,
+} from "@/lib/schemas/user";
+import {
+	createValidationErrorResponse,
+	createApiResponse,
+	createErrorResponse,
+} from "@/lib/utils/validation";
 
 // GET /api/users - Get all users with pagination and filtering
 export async function GET(request: NextRequest) {
@@ -98,41 +84,30 @@ export async function GET(request: NextRequest) {
 
 		const totalPages = Math.ceil(total / limit);
 
-		return NextResponse.json({
-			data: transformedUsers,
-			pagination: {
-				page,
-				limit,
-				total,
-				totalPages,
+		return createApiResponse(
+			{
+				data: transformedUsers,
+				pagination: {
+					page,
+					limit,
+					total,
+					totalPages,
+				},
 			},
-			error: null,
-			message: "Users retrieved successfully",
-			statusCode: 200,
-		});
+			"Users retrieved successfully",
+			200
+		);
 	} catch (error) {
 		console.error("Error fetching users:", error);
 
 		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Validation failed",
-					message: error.errors.map((e) => e.message).join(", "),
-					statusCode: 422,
-				},
-				{ status: 422 }
-			);
+			return createValidationErrorResponse(error);
 		}
 
-		return NextResponse.json(
-			{
-				data: null,
-				error: "Internal server error",
-				message: "Failed to fetch users",
-				statusCode: 500,
-			},
-			{ status: 500 }
+		return createErrorResponse(
+			"Internal server error",
+			"Failed to fetch users",
+			500
 		);
 	}
 }
@@ -159,14 +134,10 @@ export async function POST(request: NextRequest) {
 		);
 
 		if (existingUser) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Email already exists",
-					message: "A user with this email already exists",
-					statusCode: 409,
-				},
-				{ status: 409 }
+			return createErrorResponse(
+				"Email already exists",
+				"A user with this email already exists",
+				409
 			);
 		}
 
@@ -181,14 +152,10 @@ export async function POST(request: NextRequest) {
 		);
 
 		if (!role) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Invalid role",
-					message: "The specified role does not exist",
-					statusCode: 400,
-				},
-				{ status: 400 }
+			return createErrorResponse(
+				"Invalid role",
+				"The specified role does not exist",
+				400
 			);
 		}
 
@@ -229,14 +196,10 @@ export async function POST(request: NextRequest) {
 		};
 
 		console.log("=== POST /api/users - Success ===");
-		return NextResponse.json(
-			{
-				data: transformedUser,
-				error: null,
-				message: "User created successfully",
-				statusCode: 201,
-			},
-			{ status: 201 }
+		return createApiResponse(
+			transformedUser,
+			"User created successfully",
+			201
 		);
 	} catch (error) {
 		console.error("=== POST /api/users - Error ===");
@@ -248,25 +211,13 @@ export async function POST(request: NextRequest) {
 
 		if (error instanceof z.ZodError) {
 			console.error("Zod validation errors:", error.errors);
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Validation failed",
-					message: error.errors.map((e) => e.message).join(", "),
-					statusCode: 422,
-				},
-				{ status: 422 }
-			);
+			return createValidationErrorResponse(error);
 		}
 
-		return NextResponse.json(
-			{
-				data: null,
-				error: "Internal server error",
-				message: "Failed to create user",
-				statusCode: 500,
-			},
-			{ status: 500 }
+		return createErrorResponse(
+			"Internal server error",
+			"Failed to create user",
+			500
 		);
 	}
 }

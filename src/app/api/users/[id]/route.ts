@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-
-// Validation schema for updating user
-const updateUserSchema = z.object({
-	name: z.string().min(1, "Name is required").optional(),
-	email: z.string().email("Invalid email format").optional(),
-	roleId: z.string().min(1, "Role ID is required").optional(),
-	status: z.enum(["Active", "Inactive", "Pending"]).optional(),
-	avatar: z.string().url().optional().nullable(),
-});
+import { updateUserSchema, type UpdateUserInput } from "@/lib/schemas/user";
+import {
+	createValidationErrorResponse,
+	createApiResponse,
+	createErrorResponse,
+} from "@/lib/utils/validation";
 
 // GET /api/users/[id] - Get user by ID
 export async function GET(
@@ -33,14 +30,10 @@ export async function GET(
 		});
 
 		if (!user) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "User not found",
-					message: "The requested user could not be found",
-					statusCode: 404,
-				},
-				{ status: 404 }
+			return createErrorResponse(
+				"User not found",
+				"The requested user could not be found",
+				404
 			);
 		}
 
@@ -59,23 +52,18 @@ export async function GET(
 			updatedAt: user.updatedAt,
 		};
 
-		return NextResponse.json({
-			data: transformedUser,
-			error: null,
-			message: "User retrieved successfully",
-			statusCode: 200,
-		});
+		return createApiResponse(
+			transformedUser,
+			"User retrieved successfully",
+			200
+		);
 	} catch (error) {
 		console.error("Error fetching user:", error);
 
-		return NextResponse.json(
-			{
-				data: null,
-				error: "Internal server error",
-				message: "Failed to fetch user",
-				statusCode: 500,
-			},
-			{ status: 500 }
+		return createErrorResponse(
+			"Internal server error",
+			"Failed to fetch user",
+			500
 		);
 	}
 }
@@ -96,14 +84,10 @@ export async function PUT(
 		});
 
 		if (!existingUser) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "User not found",
-					message: "The requested user could not be found",
-					statusCode: 404,
-				},
-				{ status: 404 }
+			return createErrorResponse(
+				"User not found",
+				"The requested user could not be found",
+				404
 			);
 		}
 
@@ -114,14 +98,10 @@ export async function PUT(
 			});
 
 			if (emailExists) {
-				return NextResponse.json(
-					{
-						data: null,
-						error: "Email already exists",
-						message: "A user with this email already exists",
-						statusCode: 409,
-					},
-					{ status: 409 }
+				return createErrorResponse(
+					"Email already exists",
+					"A user with this email already exists",
+					409
 				);
 			}
 		}
@@ -133,14 +113,10 @@ export async function PUT(
 			});
 
 			if (!role) {
-				return NextResponse.json(
-					{
-						data: null,
-						error: "Invalid role",
-						message: "The specified role does not exist",
-						statusCode: 400,
-					},
-					{ status: 400 }
+				return createErrorResponse(
+					"Invalid role",
+					"The specified role does not exist",
+					400
 				);
 			}
 		}
@@ -196,35 +172,22 @@ export async function PUT(
 			updatedAt: user.updatedAt,
 		};
 
-		return NextResponse.json({
-			data: transformedUser,
-			error: null,
-			message: "User updated successfully",
-			statusCode: 200,
-		});
+		return createApiResponse(
+			transformedUser,
+			"User updated successfully",
+			200
+		);
 	} catch (error) {
 		console.error("Error updating user:", error);
 
 		if (error instanceof z.ZodError) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Validation failed",
-					message: error.errors.map((e) => e.message).join(", "),
-					statusCode: 422,
-				},
-				{ status: 422 }
-			);
+			return createValidationErrorResponse(error);
 		}
 
-		return NextResponse.json(
-			{
-				data: null,
-				error: "Internal server error",
-				message: "Failed to update user",
-				statusCode: 500,
-			},
-			{ status: 500 }
+		return createErrorResponse(
+			"Internal server error",
+			"Failed to update user",
+			500
 		);
 	}
 }
@@ -243,14 +206,10 @@ export async function DELETE(
 		});
 
 		if (!existingUser) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "User not found",
-					message: "The requested user could not be found",
-					statusCode: 404,
-				},
-				{ status: 404 }
+			return createErrorResponse(
+				"User not found",
+				"The requested user could not be found",
+				404
 			);
 		}
 
@@ -260,15 +219,10 @@ export async function DELETE(
 		});
 
 		if (userBookings > 0) {
-			return NextResponse.json(
-				{
-					data: null,
-					error: "Cannot delete user",
-					message:
-						"User cannot be deleted because they have existing bookings",
-					statusCode: 409,
-				},
-				{ status: 409 }
+			return createErrorResponse(
+				"Cannot delete user",
+				"User cannot be deleted because they have existing bookings",
+				409
 			);
 		}
 
@@ -277,23 +231,14 @@ export async function DELETE(
 			where: { id },
 		});
 
-		return NextResponse.json({
-			data: null,
-			error: null,
-			message: "User deleted successfully",
-			statusCode: 204,
-		});
+		return createApiResponse(null, "User deleted successfully", 204);
 	} catch (error) {
 		console.error("Error deleting user:", error);
 
-		return NextResponse.json(
-			{
-				data: null,
-				error: "Internal server error",
-				message: "Failed to delete user",
-				statusCode: 500,
-			},
-			{ status: 500 }
+		return createErrorResponse(
+			"Internal server error",
+			"Failed to delete user",
+			500
 		);
 	}
 }
