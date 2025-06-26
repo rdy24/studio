@@ -4,6 +4,13 @@
 
 -   Always refers `schema.dbml` & `api-schema.yaml` as data structure reference.
 
+# Example Code
+
+-   Use code from then `users` modules as a reference for implementing new features.
+-   Follow the coding style and conventions used in the existing codebase.
+-   Use **TypeScript** for type safety and better developer experience.
+-   Follow folder structure and naming conventions used in the existing codebase.
+
 # Tech Stack
 
 ### UI Framework & Styling
