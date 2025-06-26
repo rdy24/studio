@@ -103,6 +103,21 @@
 -   **Complex Relationships** - Many-to-many relationship with destinations
 -   **Date Management** - Calendar integration with date validation
 
+#### 7. Travel Schedule Management (`/dashboard/schedules`)
+
+-   **Detailed Itinerary Planning** - Granular schedule management for voyages
+-   **Schedule Attributes**:
+    -   Event details (title, description, location)
+    -   Voyage association (linked to specific voyages)
+    -   Date/time management (start/end datetime with time picker)
+    -   Status tracking (Scheduled, In Progress, Completed, Cancelled)
+    -   Participant management (multi-user selection)
+    -   Additional notes and instructions
+-   **Advanced Features** - Time validation, participant selection, real-time search
+-   **Integration** - Seamless connection with voyage and user management
+-   **Complex Relationships** - Many-to-many relationship with users (participants)
+-   **Time Management** - Precise datetime handling with validation
+
 ### Application Flow
 
 #### 1. User Journey

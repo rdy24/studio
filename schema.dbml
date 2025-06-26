@@ -172,12 +172,50 @@ Table system_settings {
   }
 }
 
+// Travel schedules table for detailed itinerary planning
+Table travel_schedules {
+  id text [primary key, note: 'Unique travel schedule identifier']
+  title text [not null, note: 'Schedule title/name']
+  voyage_id text [ref: > voyages.id, note: 'Foreign key to voyages table']
+  start_datetime datetime [not null, note: 'Schedule start date and time']
+  end_datetime datetime [not null, note: 'Schedule end date and time']
+  location text [not null, note: 'Schedule location/venue']
+  description text [note: 'Detailed schedule description']
+  status text [not null, default: 'Scheduled', note: 'Schedule status: Scheduled, In Progress, Completed, Cancelled']
+  notes text [note: 'Additional notes and instructions']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    voyage_id
+    start_datetime
+    end_datetime
+    status
+  }
+}
+
+// Junction table for many-to-many relationship between travel schedules and participants (users)
+Table travel_schedule_participants {
+  schedule_id text [ref: > travel_schedules.id, note: 'Foreign key to travel_schedules table']
+  user_id text [ref: > users.id, note: 'Foreign key to users table (participant)']
+  created_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    (schedule_id, user_id) [pk]
+    schedule_id
+    user_id
+  }
+}
+
 // Relationships documentation
 Ref: users.role_id > roles.id [delete: restrict, update: cascade]
 Ref: role_permissions.role_id > roles.id [delete: cascade, update: cascade]
 Ref: role_permissions.permission_id > permissions.id [delete: cascade, update: cascade]
 Ref: voyage_destinations.voyage_id > voyages.id [delete: cascade, update: cascade]
 Ref: voyage_destinations.destination_id > destinations.id [delete: cascade, update: cascade]
+Ref: travel_schedules.voyage_id > voyages.id [delete: restrict, update: cascade]
+Ref: travel_schedule_participants.schedule_id > travel_schedules.id [delete: cascade, update: cascade]
+Ref: travel_schedule_participants.user_id > users.id [delete: cascade, update: cascade]
 Ref: bookings.voyage_id > voyages.id [delete: restrict, update: cascade]
 Ref: bookings.user_id > users.id [delete: restrict, update: cascade]
 Ref: activity_logs.user_id > users.id [delete: set null, update: cascade]
