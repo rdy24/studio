@@ -1,0 +1,243 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles table for permission-based access control
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+// Permissions table for granular access control
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+// Junction table for many-to-many relationship between roles and permissions
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// Users table for authentication and user management
+model User {
+  id         String    @id @default(cuid())
+  name       String
+  email      String    @unique
+  roleId     String    @map("role_id")
+  status     String    @default("Pending") // Active, Inactive, Pending
+  avatar     String?
+  lastLogin  DateTime? @map("last_login")
+  dateJoined DateTime  @default(now()) @map("date_joined")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  role                        Role                         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  bookings                    Booking[]
+  activityLogs                ActivityLog[]
+  travelScheduleParticipants  TravelScheduleParticipant[]
+
+  @@index([email])
+  @@index([status])
+  @@index([roleId])
+  @@map("users")
+}
+
+// Destinations table for travel locations
+model Destination {
+  id          String   @id @default(cuid())
+  name        String
+  country     String
+  description String?
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  voyageDestinations VoyageDestination[]
+
+  @@index([name])
+  @@index([country])
+  @@map("destinations")
+}
+
+// Voyages table for travel packages
+model Voyage {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  price       Float     @default(0)
+  status      String    @default("Upcoming") // Upcoming, Ongoing, Completed, Cancelled
+  imageUrl    String?   @map("image_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  voyageDestinations VoyageDestination[]
+  bookings           Booking[]
+  travelSchedules    TravelSchedule[]
+
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([price])
+  @@map("voyages")
+}
+
+// Junction table for many-to-many relationship between voyages and destinations
+model VoyageDestination {
+  voyageId      String  @map("voyage_id")
+  destinationId String  @map("destination_id")
+  sequenceOrder Int?    @map("sequence_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  voyage      Voyage      @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([voyageId, destinationId])
+  @@index([voyageId])
+  @@index([destinationId])
+  @@map("voyage_destinations")
+}
+
+// Bookings table for voyage reservations
+model Booking {
+  id            String   @id @default(cuid())
+  voyageId      String   @map("voyage_id")
+  userId        String   @map("user_id")
+  bookingDate   DateTime @default(now()) @map("booking_date")
+  status        String   @default("Pending") // Pending, Confirmed, Cancelled, Completed
+  totalAmount   Float    @map("total_amount")
+  paymentStatus String   @default("Pending") @map("payment_status") // Pending, Paid, Refunded
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  voyage Voyage @relation(fields: [voyageId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([voyageId])
+  @@index([userId])
+  @@index([bookingDate])
+  @@index([status])
+  @@index([paymentStatus])
+  @@map("bookings")
+}
+
+// Travel schedules table for detailed itinerary planning
+model TravelSchedule {
+  id            String   @id @default(cuid())
+  title         String
+  voyageId      String   @map("voyage_id")
+  startDatetime DateTime @map("start_datetime")
+  endDatetime   DateTime @map("end_datetime")
+  location      String
+  description   String?
+  status        String   @default("Scheduled") // Scheduled, In Progress, Completed, Cancelled
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  voyage                        Voyage                         @relation(fields: [voyageId], references: [id], onDelete: Restrict)
+  travelScheduleParticipants    TravelScheduleParticipant[]
+
+  @@index([voyageId])
+  @@index([startDatetime])
+  @@index([endDatetime])
+  @@index([status])
+  @@map("travel_schedules")
+}
+
+// Junction table for many-to-many relationship between travel schedules and participants (users)
+model TravelScheduleParticipant {
+  scheduleId String   @map("schedule_id")
+  userId     String   @map("user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  schedule TravelSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([scheduleId, userId])
+  @@index([scheduleId])
+  @@index([userId])
+  @@map("travel_schedule_participants")
+}
+
+// Activity log for audit trail
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  details    String?  // JSON string with additional action details
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+// System settings for application configuration
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String?  // JSON string for complex values
+  description String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([key])
+  @@index([isPublic])
+  @@map("system_settings")
+}
