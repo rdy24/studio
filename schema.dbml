@@ -1,0 +1,183 @@
+// Voyage Control Database Schema
+// Compatible with SQLite
+
+Project VoyageControl {
+  database_type: 'SQLite'
+  Note: 'Travel operations back office system database schema'
+}
+
+// Users table for authentication and user management
+Table users {
+  id text [primary key, note: 'Unique user identifier']
+  name text [not null, note: 'Full name of the user']
+  email text [not null, unique, note: 'Email address for login']
+  role_id text [ref: > roles.id, note: 'Foreign key to roles table']
+  status text [not null, default: 'Pending', note: 'User status: Active, Inactive, Pending']
+  avatar text [note: 'URL to user avatar image']
+  last_login datetime [note: 'Timestamp of last login']
+  date_joined datetime [not null, default: `datetime('now')`, note: 'Account creation timestamp']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    email [unique]
+    status
+    role_id
+  }
+}
+
+// Roles table for permission-based access control
+Table roles {
+  id text [primary key, note: 'Unique role identifier']
+  name text [not null, unique, note: 'Role name (e.g., Administrator, Travel Agent)']
+  description text [note: 'Role description and responsibilities']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    name [unique]
+  }
+}
+
+// Permissions table for granular access control
+Table permissions {
+  id text [primary key, note: 'Unique permission identifier']
+  name text [not null, unique, note: 'Permission name (e.g., manage_users, view_reports)']
+  description text [note: 'Permission description']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    name [unique]
+  }
+}
+
+// Junction table for many-to-many relationship between roles and permissions
+Table role_permissions {
+  role_id text [ref: > roles.id, note: 'Foreign key to roles table']
+  permission_id text [ref: > permissions.id, note: 'Foreign key to permissions table']
+  created_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    (role_id, permission_id) [pk]
+  }
+}
+
+// Destinations table for travel locations
+Table destinations {
+  id text [primary key, note: 'Unique destination identifier']
+  name text [not null, note: 'Destination name (e.g., Paris, Tokyo)']
+  country text [not null, note: 'Country where destination is located']
+  description text [note: 'Marketing description of the destination']
+  image_url text [note: 'URL to destination image']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    name
+    country
+  }
+}
+
+// Voyages table for travel packages
+Table voyages {
+  id text [primary key, note: 'Unique voyage identifier']
+  name text [not null, note: 'Voyage name/title']
+  description text [note: 'Detailed voyage description']
+  start_date datetime [note: 'Voyage start date']
+  end_date datetime [note: 'Voyage end date']
+  price decimal(10,2) [not null, default: 0, note: 'Voyage price in USD']
+  status text [not null, default: 'Upcoming', note: 'Voyage status: Upcoming, Ongoing, Completed, Cancelled']
+  image_url text [note: 'URL to voyage promotional image']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    status
+    start_date
+    end_date
+    price
+  }
+}
+
+// Junction table for many-to-many relationship between voyages and destinations
+Table voyage_destinations {
+  voyage_id text [ref: > voyages.id, note: 'Foreign key to voyages table']
+  destination_id text [ref: > destinations.id, note: 'Foreign key to destinations table']
+  sequence_order integer [note: 'Order of destination in voyage itinerary']
+  created_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    (voyage_id, destination_id) [pk]
+    voyage_id
+    destination_id
+  }
+}
+
+// Bookings table for voyage reservations
+Table bookings {
+  id text [primary key, note: 'Unique booking identifier']
+  voyage_id text [ref: > voyages.id, note: 'Foreign key to voyages table']
+  user_id text [ref: > users.id, note: 'Foreign key to users table (customer)']
+  booking_date datetime [not null, default: `datetime('now')`, note: 'When booking was made']
+  status text [not null, default: 'Pending', note: 'Booking status: Pending, Confirmed, Cancelled, Completed']
+  total_amount decimal(10,2) [not null, note: 'Total booking amount']
+  payment_status text [not null, default: 'Pending', note: 'Payment status: Pending, Paid, Refunded']
+  notes text [note: 'Additional booking notes']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    voyage_id
+    user_id
+    booking_date
+    status
+    payment_status
+  }
+}
+
+// Activity log for audit trail
+Table activity_logs {
+  id text [primary key, note: 'Unique activity log identifier']
+  user_id text [ref: > users.id, note: 'User who performed the action']
+  action text [not null, note: 'Action performed (e.g., created_user, updated_voyage)']
+  entity_type text [not null, note: 'Type of entity affected (user, voyage, booking, etc.)']
+  entity_id text [note: 'ID of the affected entity']
+  details text [note: 'JSON string with additional action details']
+  ip_address text [note: 'IP address of the user']
+  user_agent text [note: 'Browser user agent string']
+  created_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    user_id
+    action
+    entity_type
+    created_at
+  }
+}
+
+// System settings for application configuration
+Table system_settings {
+  id text [primary key, note: 'Unique setting identifier']
+  key text [not null, unique, note: 'Setting key name']
+  value text [note: 'Setting value (JSON string for complex values)']
+  description text [note: 'Setting description']
+  is_public boolean [not null, default: false, note: 'Whether setting is publicly accessible']
+  created_at datetime [not null, default: `datetime('now')`]
+  updated_at datetime [not null, default: `datetime('now')`]
+
+  indexes {
+    key [unique]
+    is_public
+  }
+}
+
+// Relationships documentation
+Ref: users.role_id > roles.id [delete: restrict, update: cascade]
+Ref: role_permissions.role_id > roles.id [delete: cascade, update: cascade]
+Ref: role_permissions.permission_id > permissions.id [delete: cascade, update: cascade]
+Ref: voyage_destinations.voyage_id > voyages.id [delete: cascade, update: cascade]
+Ref: voyage_destinations.destination_id > destinations.id [delete: cascade, update: cascade]
+Ref: bookings.voyage_id > voyages.id [delete: restrict, update: cascade]
+Ref: bookings.user_id > users.id [delete: restrict, update: cascade]
+Ref: activity_logs.user_id > users.id [delete: set null, update: cascade]

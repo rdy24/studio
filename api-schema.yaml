@@ -1,0 +1,1461 @@
+openapi: 3.0.3
+info:
+    title: Voyage Control API
+    description: Travel operations back office system API for managing users, roles, destinations, and voyages
+    version: 1.0.0
+    contact:
+        name: Voyage Control Support
+        email: support@voyagecontrol.com
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
+
+servers:
+    - url: https://api.voyagecontrol.com/v1
+      description: Production server
+    - url: https://staging-api.voyagecontrol.com/v1
+      description: Staging server
+    - url: http://localhost:3000/api/v1
+      description: Development server
+
+security:
+    - bearerAuth: []
+
+paths:
+    # Authentication endpoints
+    /auth/login:
+        post:
+            tags:
+                - Authentication
+            summary: User login
+            description: Authenticate user with email and password
+            security: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - email
+                                - password
+                            properties:
+                                email:
+                                    type: string
+                                    format: email
+                                    example: alice@example.com
+                                password:
+                                    type: string
+                                    format: password
+                                    example: password123
+            responses:
+                "200":
+                    description: Login successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    token:
+                                        type: string
+                                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                                    user:
+                                        $ref: "#/components/schemas/User"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /auth/logout:
+        post:
+            tags:
+                - Authentication
+            summary: User logout
+            description: Invalidate user session
+            responses:
+                "200":
+                    description: Logout successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Logged out successfully
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+    # User management endpoints
+    /users:
+        get:
+            tags:
+                - Users
+            summary: Get all users
+            description: Retrieve a paginated list of users with optional filtering
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                  description: Search users by name, email, or role
+                - name: status
+                  in: query
+                  schema:
+                      type: string
+                      enum: [Active, Inactive, Pending]
+                - name: role_id
+                  in: query
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Users retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/User"
+                                    pagination:
+                                        $ref: "#/components/schemas/Pagination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+
+        post:
+            tags:
+                - Users
+            summary: Create a new user
+            description: Create a new user account
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateUserRequest"
+            responses:
+                "201":
+                    description: User created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /users/{id}:
+        get:
+            tags:
+                - Users
+            summary: Get user by ID
+            description: Retrieve a specific user by their ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: User retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+        put:
+            tags:
+                - Users
+            summary: Update user
+            description: Update an existing user
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateUserRequest"
+            responses:
+                "200":
+                    description: User updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+        delete:
+            tags:
+                - Users
+            summary: Delete user
+            description: Delete a user account
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "204":
+                    description: User deleted successfully
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+    # Role management endpoints
+    /roles:
+        get:
+            tags:
+                - Roles
+            summary: Get all roles
+            description: Retrieve all roles with their permissions
+            responses:
+                "200":
+                    description: Roles retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/Role"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+
+        post:
+            tags:
+                - Roles
+            summary: Create a new role
+            description: Create a new role with permissions
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateRoleRequest"
+            responses:
+                "201":
+                    description: Role created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Role"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /roles/{id}:
+        get:
+            tags:
+                - Roles
+            summary: Get role by ID
+            description: Retrieve a specific role by its ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Role retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Role"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+        put:
+            tags:
+                - Roles
+            summary: Update role
+            description: Update an existing role
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateRoleRequest"
+            responses:
+                "200":
+                    description: Role updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Role"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+        delete:
+            tags:
+                - Roles
+            summary: Delete role
+            description: Delete a role (only if not assigned to any users)
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "204":
+                    description: Role deleted successfully
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "409":
+                    description: Role cannot be deleted (assigned to users)
+
+    # Destination management endpoints
+    /destinations:
+        get:
+            tags:
+                - Destinations
+            summary: Get all destinations
+            description: Retrieve a paginated list of destinations
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                  description: Search destinations by name, country, or description
+                - name: country
+                  in: query
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Destinations retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Destination"
+                                    pagination:
+                                        $ref: "#/components/schemas/Pagination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+        post:
+            tags:
+                - Destinations
+            summary: Create a new destination
+            description: Create a new travel destination
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateDestinationRequest"
+            responses:
+                "201":
+                    description: Destination created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Destination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /destinations/{id}:
+        get:
+            tags:
+                - Destinations
+            summary: Get destination by ID
+            description: Retrieve a specific destination by its ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Destination retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Destination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+        put:
+            tags:
+                - Destinations
+            summary: Update destination
+            description: Update an existing destination
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateDestinationRequest"
+            responses:
+                "200":
+                    description: Destination updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Destination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+        delete:
+            tags:
+                - Destinations
+            summary: Delete destination
+            description: Delete a destination (only if not used in any voyages)
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "204":
+                    description: Destination deleted successfully
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "409":
+                    description: Destination cannot be deleted (used in voyages)
+
+    # Voyage management endpoints
+    /voyages:
+        get:
+            tags:
+                - Voyages
+            summary: Get all voyages
+            description: Retrieve a paginated list of voyages
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                - name: search
+                  in: query
+                  schema:
+                      type: string
+                  description: Search voyages by name or description
+                - name: status
+                  in: query
+                  schema:
+                      type: string
+                      enum: [Upcoming, Ongoing, Completed, Cancelled]
+                - name: destination_id
+                  in: query
+                  schema:
+                      type: string
+                - name: start_date_from
+                  in: query
+                  schema:
+                      type: string
+                      format: date
+                - name: start_date_to
+                  in: query
+                  schema:
+                      type: string
+                      format: date
+                - name: price_min
+                  in: query
+                  schema:
+                      type: number
+                      minimum: 0
+                - name: price_max
+                  in: query
+                  schema:
+                      type: number
+                      minimum: 0
+            responses:
+                "200":
+                    description: Voyages retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Voyage"
+                                    pagination:
+                                        $ref: "#/components/schemas/Pagination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+        post:
+            tags:
+                - Voyages
+            summary: Create a new voyage
+            description: Create a new travel voyage
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateVoyageRequest"
+            responses:
+                "201":
+                    description: Voyage created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Voyage"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /voyages/{id}:
+        get:
+            tags:
+                - Voyages
+            summary: Get voyage by ID
+            description: Retrieve a specific voyage by its ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Voyage retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Voyage"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+        put:
+            tags:
+                - Voyages
+            summary: Update voyage
+            description: Update an existing voyage
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateVoyageRequest"
+            responses:
+                "200":
+                    description: Voyage updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Voyage"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+        delete:
+            tags:
+                - Voyages
+            summary: Delete voyage
+            description: Delete a voyage (only if no bookings exist)
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "204":
+                    description: Voyage deleted successfully
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "403":
+                    $ref: "#/components/responses/Forbidden"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "409":
+                    description: Voyage cannot be deleted (has bookings)
+
+    # Booking management endpoints
+    /bookings:
+        get:
+            tags:
+                - Bookings
+            summary: Get all bookings
+            description: Retrieve a paginated list of bookings
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      default: 1
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                - name: voyage_id
+                  in: query
+                  schema:
+                      type: string
+                - name: user_id
+                  in: query
+                  schema:
+                      type: string
+                - name: status
+                  in: query
+                  schema:
+                      type: string
+                      enum: [Pending, Confirmed, Cancelled, Completed]
+                - name: payment_status
+                  in: query
+                  schema:
+                      type: string
+                      enum: [Pending, Paid, Refunded]
+            responses:
+                "200":
+                    description: Bookings retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Booking"
+                                    pagination:
+                                        $ref: "#/components/schemas/Pagination"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+        post:
+            tags:
+                - Bookings
+            summary: Create a new booking
+            description: Create a new voyage booking
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateBookingRequest"
+            responses:
+                "201":
+                    description: Booking created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Booking"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    /bookings/{id}:
+        get:
+            tags:
+                - Bookings
+            summary: Get booking by ID
+            description: Retrieve a specific booking by its ID
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Booking retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Booking"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+
+        put:
+            tags:
+                - Bookings
+            summary: Update booking
+            description: Update an existing booking
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateBookingRequest"
+            responses:
+                "200":
+                    description: Booking updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Booking"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+                "404":
+                    $ref: "#/components/responses/NotFound"
+                "422":
+                    $ref: "#/components/responses/ValidationError"
+
+    # Dashboard and analytics endpoints
+    /dashboard/metrics:
+        get:
+            tags:
+                - Dashboard
+            summary: Get dashboard metrics
+            description: Retrieve key metrics for the dashboard
+            responses:
+                "200":
+                    description: Metrics retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DashboardMetrics"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+    /dashboard/activity:
+        get:
+            tags:
+                - Dashboard
+            summary: Get recent activity
+            description: Retrieve recent system activity for the dashboard
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 50
+                      default: 10
+            responses:
+                "200":
+                    description: Activity retrieved successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/ActivityLog"
+                "401":
+                    $ref: "#/components/responses/Unauthorized"
+
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+
+    schemas:
+        User:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                name:
+                    type: string
+                    example: "Alice Wonderland"
+                email:
+                    type: string
+                    format: email
+                    example: "alice@example.com"
+                role_id:
+                    type: string
+                    example: "1"
+                role:
+                    $ref: "#/components/schemas/Role"
+                status:
+                    type: string
+                    enum: [Active, Inactive, Pending]
+                    example: "Active"
+                avatar:
+                    type: string
+                    format: uri
+                    nullable: true
+                    example: "https://placehold.co/40x40.png?text=AW"
+                last_login:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2024-07-20T10:00:00Z"
+                date_joined:
+                    type: string
+                    format: date-time
+                    example: "2023-01-15T09:00:00Z"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2023-01-15T09:00:00Z"
+                updated_at:
+                    type: string
+                    format: date-time
+                    example: "2024-07-20T10:00:00Z"
+
+        CreateUserRequest:
+            type: object
+            required:
+                - name
+                - email
+                - role_id
+            properties:
+                name:
+                    type: string
+                    example: "John Doe"
+                email:
+                    type: string
+                    format: email
+                    example: "john@example.com"
+                role_id:
+                    type: string
+                    example: "2"
+                status:
+                    type: string
+                    enum: [Active, Inactive, Pending]
+                    default: "Pending"
+                avatar:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        UpdateUserRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                email:
+                    type: string
+                    format: email
+                role_id:
+                    type: string
+                status:
+                    type: string
+                    enum: [Active, Inactive, Pending]
+                avatar:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        Role:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                name:
+                    type: string
+                    example: "Administrator"
+                description:
+                    type: string
+                    example: "Full access to all system features"
+                permissions:
+                    type: array
+                    items:
+                        type: string
+                    example:
+                        [
+                            "manage_users",
+                            "manage_roles",
+                            "manage_voyages",
+                            "view_reports",
+                        ]
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        CreateRoleRequest:
+            type: object
+            required:
+                - name
+                - permissions
+            properties:
+                name:
+                    type: string
+                    example: "Travel Agent"
+                description:
+                    type: string
+                    example: "Manages voyages and bookings"
+                permissions:
+                    type: array
+                    items:
+                        type: string
+                    example: ["manage_voyages", "view_bookings"]
+
+        UpdateRoleRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                permissions:
+                    type: array
+                    items:
+                        type: string
+
+        Destination:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                name:
+                    type: string
+                    example: "Paris"
+                country:
+                    type: string
+                    example: "France"
+                description:
+                    type: string
+                    nullable: true
+                    example: "The city of lights and love"
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    example: "https://placehold.co/600x400.png"
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        CreateDestinationRequest:
+            type: object
+            required:
+                - name
+                - country
+            properties:
+                name:
+                    type: string
+                    example: "Tokyo"
+                country:
+                    type: string
+                    example: "Japan"
+                description:
+                    type: string
+                    nullable: true
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        UpdateDestinationRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                country:
+                    type: string
+                description:
+                    type: string
+                    nullable: true
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        Voyage:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                name:
+                    type: string
+                    example: "Parisian Dream"
+                description:
+                    type: string
+                    nullable: true
+                    example: "Explore the romantic city of Paris"
+                destinations:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Destination"
+                destination_ids:
+                    type: array
+                    items:
+                        type: string
+                    example: ["1", "2"]
+                start_date:
+                    type: string
+                    format: date
+                    nullable: true
+                    example: "2024-09-01"
+                end_date:
+                    type: string
+                    format: date
+                    nullable: true
+                    example: "2024-09-07"
+                price:
+                    type: number
+                    format: decimal
+                    minimum: 0
+                    example: 1200.00
+                status:
+                    type: string
+                    enum: [Upcoming, Ongoing, Completed, Cancelled]
+                    example: "Upcoming"
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    example: "https://placehold.co/600x400.png"
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        CreateVoyageRequest:
+            type: object
+            required:
+                - name
+                - destination_ids
+                - price
+            properties:
+                name:
+                    type: string
+                    example: "Alpine Adventure"
+                description:
+                    type: string
+                    nullable: true
+                destination_ids:
+                    type: array
+                    items:
+                        type: string
+                    minItems: 1
+                    example: ["1", "3"]
+                start_date:
+                    type: string
+                    format: date
+                    nullable: true
+                end_date:
+                    type: string
+                    format: date
+                    nullable: true
+                price:
+                    type: number
+                    format: decimal
+                    minimum: 0
+                    example: 1500.00
+                status:
+                    type: string
+                    enum: [Upcoming, Ongoing, Completed, Cancelled]
+                    default: "Upcoming"
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        UpdateVoyageRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                    nullable: true
+                destination_ids:
+                    type: array
+                    items:
+                        type: string
+                    minItems: 1
+                start_date:
+                    type: string
+                    format: date
+                    nullable: true
+                end_date:
+                    type: string
+                    format: date
+                    nullable: true
+                price:
+                    type: number
+                    format: decimal
+                    minimum: 0
+                status:
+                    type: string
+                    enum: [Upcoming, Ongoing, Completed, Cancelled]
+                image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+
+        Booking:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                voyage_id:
+                    type: string
+                    example: "1"
+                voyage:
+                    $ref: "#/components/schemas/Voyage"
+                user_id:
+                    type: string
+                    example: "2"
+                user:
+                    $ref: "#/components/schemas/User"
+                booking_date:
+                    type: string
+                    format: date-time
+                    example: "2024-07-15T14:30:00Z"
+                status:
+                    type: string
+                    enum: [Pending, Confirmed, Cancelled, Completed]
+                    example: "Confirmed"
+                total_amount:
+                    type: number
+                    format: decimal
+                    example: 1200.00
+                payment_status:
+                    type: string
+                    enum: [Pending, Paid, Refunded]
+                    example: "Paid"
+                notes:
+                    type: string
+                    nullable: true
+                    example: "Special dietary requirements"
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        CreateBookingRequest:
+            type: object
+            required:
+                - voyage_id
+                - user_id
+                - total_amount
+            properties:
+                voyage_id:
+                    type: string
+                    example: "1"
+                user_id:
+                    type: string
+                    example: "2"
+                total_amount:
+                    type: number
+                    format: decimal
+                    minimum: 0
+                    example: 1200.00
+                status:
+                    type: string
+                    enum: [Pending, Confirmed, Cancelled, Completed]
+                    default: "Pending"
+                payment_status:
+                    type: string
+                    enum: [Pending, Paid, Refunded]
+                    default: "Pending"
+                notes:
+                    type: string
+                    nullable: true
+
+        UpdateBookingRequest:
+            type: object
+            properties:
+                status:
+                    type: string
+                    enum: [Pending, Confirmed, Cancelled, Completed]
+                payment_status:
+                    type: string
+                    enum: [Pending, Paid, Refunded]
+                notes:
+                    type: string
+                    nullable: true
+
+        DashboardMetrics:
+            type: object
+            properties:
+                total_users:
+                    type: integer
+                    example: 1250
+                active_voyages:
+                    type: integer
+                    example: 78
+                bookings_this_month:
+                    type: integer
+                    example: 320
+                destinations_served:
+                    type: integer
+                    example: 45
+                monthly_bookings:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            month:
+                                type: string
+                                example: "Jan"
+                            bookings:
+                                type: integer
+                                example: 120
+
+        ActivityLog:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: "1"
+                user_id:
+                    type: string
+                    nullable: true
+                    example: "1"
+                user_name:
+                    type: string
+                    nullable: true
+                    example: "Alice"
+                action:
+                    type: string
+                    example: "added a new voyage to The Maldives"
+                timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-07-20T10:00:00Z"
+
+        Pagination:
+            type: object
+            properties:
+                page:
+                    type: integer
+                    example: 1
+                limit:
+                    type: integer
+                    example: 10
+                total:
+                    type: integer
+                    example: 100
+                total_pages:
+                    type: integer
+                    example: 10
+
+        Error:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: "Resource not found"
+                message:
+                    type: string
+                    example: "The requested resource could not be found"
+                code:
+                    type: string
+                    example: "NOT_FOUND"
+
+        ValidationError:
+            type: object
+            properties:
+                error:
+                    type: string
+                    example: "Validation failed"
+                message:
+                    type: string
+                    example: "The request data is invalid"
+                details:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            field:
+                                type: string
+                                example: "email"
+                            message:
+                                type: string
+                                example: "Email is required"
+
+    responses:
+        Unauthorized:
+            description: Authentication required
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/Error"
+                    example:
+                        error: "Unauthorized"
+                        message: "Authentication required"
+                        code: "UNAUTHORIZED"
+
+        Forbidden:
+            description: Insufficient permissions
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/Error"
+                    example:
+                        error: "Forbidden"
+                        message: "Insufficient permissions to access this resource"
+                        code: "FORBIDDEN"
+
+        NotFound:
+            description: Resource not found
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/Error"
+                    example:
+                        error: "Not Found"
+                        message: "The requested resource could not be found"
+                        code: "NOT_FOUND"
+
+        ValidationError:
+            description: Validation error
+            content:
+                application/json:
+                    schema:
+                        $ref: "#/components/schemas/ValidationError"
+                    example:
+                        error: "Validation failed"
+                        message: "The request data is invalid"
+                        details:
+                            - field: "email"
+                              message: "Email is required"
+                            - field: "name"
+                              message: "Name must be at least 2 characters"
