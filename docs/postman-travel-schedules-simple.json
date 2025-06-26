@@ -1,0 +1,269 @@
+{
+	"info": {
+		"_postman_id": "travel-schedules-api-collection",
+		"name": "Travel Schedules API - Simple CRUD Testing",
+		"description": "Simple collection for testing Travel Schedules CRUD operations in Voyage Control API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Travel Schedules",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules?page=1&limit=10",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Travel Schedules with Search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules?search=tour&status=Scheduled",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"],
+					"query": [
+						{
+							"key": "search",
+							"value": "tour"
+						},
+						{
+							"key": "status",
+							"value": "Scheduled"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Travel Schedules by Voyage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules?voyage_id={{voyage_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"],
+					"query": [
+						{
+							"key": "voyage_id",
+							"value": "{{voyage_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Travel Schedules by Date Range",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules?start_datetime_from=2024-09-01T00:00:00Z&start_datetime_to=2024-09-30T23:59:59Z",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"],
+					"query": [
+						{
+							"key": "start_datetime_from",
+							"value": "2024-09-01T00:00:00Z"
+						},
+						{
+							"key": "start_datetime_to",
+							"value": "2024-09-30T23:59:59Z"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Travel Schedules by Participant",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules?participant_id={{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"],
+					"query": [
+						{
+							"key": "participant_id",
+							"value": "{{user_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Travel Schedule",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"City Tour Paris\",\n  \"voyageId\": \"{{voyage_id}}\",\n  \"startDatetime\": \"2024-09-01T09:00:00Z\",\n  \"endDatetime\": \"2024-09-01T17:00:00Z\",\n  \"location\": \"Eiffel Tower, Paris\",\n  \"description\": \"Guided tour of the iconic Eiffel Tower and surrounding areas\",\n  \"status\": \"Scheduled\",\n  \"participantIds\": [\"{{user_id}}\"],\n  \"notes\": \"Bring comfortable walking shoes and camera\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Travel Schedule - Minimal",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Museum Visit\",\n  \"voyageId\": \"{{voyage_id}}\",\n  \"startDatetime\": \"2024-09-02T10:00:00Z\",\n  \"endDatetime\": \"2024-09-02T16:00:00Z\",\n  \"location\": \"Louvre Museum, Paris\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules",
+					"host": ["{{base_url}}"],
+					"path": ["api", "travel-schedules"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Travel Schedule by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules/{{travel_schedule_id}}",
+					"host": ["{{base_url}}"],
+					"path": [
+						"api",
+						"travel-schedules",
+						"{{travel_schedule_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Travel Schedule",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Updated City Tour Paris\",\n  \"startDatetime\": \"2024-09-01T08:30:00Z\",\n  \"endDatetime\": \"2024-09-01T18:00:00Z\",\n  \"location\": \"Eiffel Tower & Arc de Triomphe, Paris\",\n  \"description\": \"Extended guided tour including Eiffel Tower and Arc de Triomphe\",\n  \"status\": \"In Progress\",\n  \"participantIds\": [\"{{user_id}}\", \"{{user_id_2}}\"],\n  \"notes\": \"Updated itinerary - bring comfortable walking shoes, camera, and water bottle\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules/{{travel_schedule_id}}",
+					"host": ["{{base_url}}"],
+					"path": [
+						"api",
+						"travel-schedules",
+						"{{travel_schedule_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Travel Schedule - Partial",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"Completed\",\n  \"notes\": \"Tour completed successfully. All participants enjoyed the experience.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules/{{travel_schedule_id}}",
+					"host": ["{{base_url}}"],
+					"path": [
+						"api",
+						"travel-schedules",
+						"{{travel_schedule_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Travel Schedule",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/travel-schedules/{{travel_schedule_id}}",
+					"host": ["{{base_url}}"],
+					"path": [
+						"api",
+						"travel-schedules",
+						"{{travel_schedule_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "travel_schedule_id",
+			"value": "",
+			"description": "ID of the travel schedule for testing individual operations"
+		},
+		{
+			"key": "voyage_id",
+			"value": "",
+			"description": "ID of the voyage to associate with travel schedules"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"description": "ID of the user to add as participant"
+		},
+		{
+			"key": "user_id_2",
+			"value": "",
+			"description": "ID of the second user for testing multiple participants"
+		}
+	]
+}

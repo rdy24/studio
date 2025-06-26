@@ -1,0 +1,442 @@
+{
+	"info": {
+		"name": "Voyage Control - Bookings API (Simple)",
+		"description": "Simple CRUD API collection for Bookings module testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Bookings",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Bookings with Pagination",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?page=1&limit=5",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "5"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Bookings by Voyage",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?voyage_id={{voyage_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "voyage_id",
+							"value": "{{voyage_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Bookings by User",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?user_id={{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "{{user_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Bookings by Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?status=Confirmed",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "status",
+							"value": "Confirmed"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Bookings by Payment Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?payment_status=Paid",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "payment_status",
+							"value": "Paid"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Filter Bookings - Multiple Filters",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings?status=Confirmed&payment_status=Paid&page=1&limit=10",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"],
+					"query": [
+						{
+							"key": "status",
+							"value": "Confirmed"
+						},
+						{
+							"key": "payment_status",
+							"value": "Paid"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Booking by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Booking - Basic",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"voyageId\": \"{{voyage_id}}\",\n  \"userId\": \"{{user_id}}\",\n  \"totalAmount\": 1200.00,\n  \"status\": \"Pending\",\n  \"paymentStatus\": \"Pending\",\n  \"notes\": \"Standard booking for Parisian Dream voyage\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Booking - Minimal Required Fields",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"voyageId\": \"{{voyage_id}}\",\n  \"userId\": \"{{user_id}}\",\n  \"totalAmount\": 899.99\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Booking - Confirmed with Payment",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"voyageId\": \"{{voyage_id}}\",\n  \"userId\": \"{{user_id}}\",\n  \"totalAmount\": 2500.00,\n  \"status\": \"Confirmed\",\n  \"paymentStatus\": \"Paid\",\n  \"notes\": \"Premium booking with full payment received\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Booking - With Special Notes",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"voyageId\": \"{{voyage_id}}\",\n  \"userId\": \"{{user_id}}\",\n  \"totalAmount\": 1500.00,\n  \"status\": \"Pending\",\n  \"paymentStatus\": \"Pending\",\n  \"notes\": \"Customer has dietary restrictions: vegetarian meals required. Also requested room with city view.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Confirm Booking",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"Confirmed\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Mark as Paid",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"paymentStatus\": \"Paid\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Complete Booking",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"Completed\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Cancel Booking",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"Cancelled\",\n  \"paymentStatus\": \"Refunded\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Add Notes",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"notes\": \"Customer called to confirm special dietary requirements. Vegetarian meals arranged.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Remove Notes",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"notes\": null\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Booking - Multiple Fields",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"Confirmed\",\n  \"paymentStatus\": \"Paid\",\n  \"notes\": \"Booking confirmed and payment processed successfully\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Booking",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/bookings/{{booking_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "bookings", "{{booking_id}}"]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"description": "Base URL for the API"
+		},
+		{
+			"key": "booking_id",
+			"value": "",
+			"description": "Booking ID for testing individual booking operations"
+		},
+		{
+			"key": "voyage_id",
+			"value": "",
+			"description": "Voyage ID for creating bookings"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"description": "User ID for creating bookings"
+		}
+	]
+}

@@ -73,6 +73,14 @@ async function main() {
 				description: "View booking information",
 			},
 		}),
+		prisma.permission.upsert({
+			where: { name: "manage_support_tickets" },
+			update: {},
+			create: {
+				name: "manage_support_tickets",
+				description: "Create, read, update, and delete support tickets",
+			},
+		}),
 	]);
 
 	// Create Roles

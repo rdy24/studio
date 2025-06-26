@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { Role } from "@/types";
-import { rolesApi } from "@/lib/api/roles";
+import { getRoles } from "@/lib/api/roles";
 
 interface RoleContextType {
 	roles: Role[];
@@ -23,7 +23,7 @@ export const RoleProvider: React.FC<{ children: React.ReactNode }> = ({
 	React.useEffect(() => {
 		(async () => {
 			try {
-				const res = await rolesApi.getRoles();
+				const res = await getRoles();
 				setRoles(res.data);
 			} catch (error) {
 				console.error("Failed to fetch roles from API:", error);

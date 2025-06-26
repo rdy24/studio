@@ -7,6 +7,7 @@
 # Example Code
 
 -   Use code from then `users` modules as a reference for implementing new features.
+-   Use the `users` module as a reference for implementing new features.
 -   Follow the coding style and conventions used in the existing codebase.
 -   Use **TypeScript** for type safety and better developer experience.
 -   Follow folder structure and naming conventions used in the existing codebase.
@@ -61,3 +62,7 @@
   "status_code": number // HTTP status code
 }
 ```
+
+### API Documentation
+
+-   Make sure make documentation postman for test simple only CRUD operations.

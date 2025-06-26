@@ -1,0 +1,126 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+		"name": "Destinations API (Simple CRUD)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_collection_link": "https://www.postman.com/collections/a1b2c3d4-e5f6-7890-1234-567890abcdef"
+	},
+	"item": [
+		{
+			"name": "Get All Destinations",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/destinations?page=1&limit=10&search=Paris&country=France",
+					"host": ["{{base_url}}"],
+					"path": ["api", "destinations"],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "search",
+							"value": "Paris",
+							"description": "Optional: Search by name, country, or description"
+						},
+						{
+							"key": "country",
+							"value": "France",
+							"description": "Optional: Filter by country"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create New Destination",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"New York\",\n  \"country\": \"USA\",\n  \"description\": \"The Big Apple, a city that never sleeps.\",\n  \"image_url\": \"https://placehold.co/600x400.png?text=NewYork\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/destinations",
+					"host": ["{{base_url}}"],
+					"path": ["api", "destinations"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Destination by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/destinations/{{destination_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "destinations", "{{destination_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Destination",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"New York City\",\n  \"description\": \"The concrete jungle where dreams are made of.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/destinations/{{destination_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "destinations", "{{destination_id}}"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Destination",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/destinations/{{destination_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "destinations", "{{destination_id}}"]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "destination_id",
+			"value": "dest-paris",
+			"type": "string",
+			"description": "ID of a destination, e.g., 'dest-paris' from seed data or a newly created one."
+		}
+	]
+}
