@@ -3,10 +3,45 @@ export interface User {
 	name: string;
 	email: string;
 	role: string;
+	roleId: string;
 	status: "Active" | "Inactive" | "Pending";
 	avatar?: string;
 	lastLogin?: Date;
 	dateJoined?: Date;
+	createdAt?: Date;
+	updatedAt?: Date;
+}
+
+export interface CreateUserRequest {
+	name: string;
+	email: string;
+	roleId: string;
+	status?: "Active" | "Inactive" | "Pending";
+	avatar?: string;
+}
+
+export interface UpdateUserRequest {
+	name?: string;
+	email?: string;
+	roleId?: string;
+	status?: "Active" | "Inactive" | "Pending";
+	avatar?: string;
+}
+
+export interface ApiResponse<T> {
+	data: T;
+	error: string | null;
+	message: string;
+	statusCode: number;
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T[]> {
+	pagination: {
+		page: number;
+		limit: number;
+		total: number;
+		totalPages: number;
+	};
 }
 
 export interface Role {

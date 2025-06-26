@@ -1,123 +1,113 @@
 "use client";
 
 import * as React from "react";
-import type { User } from "@/types";
+import type { User, CreateUserRequest, UpdateUserRequest } from "@/types";
+import { usersApi } from "@/lib/api/users";
 
 interface UserContextType {
 	users: User[];
-	addUser: (user: User) => void;
-	updateUser: (user: User) => void;
-	deleteUser: (userId: string) => void;
+	loading: boolean;
+	error: string | null;
+	addUser: (userData: CreateUserRequest) => Promise<void>;
+	updateUser: (userId: string, userData: UpdateUserRequest) => Promise<void>;
+	deleteUser: (userId: string) => Promise<void>;
+	refreshUsers: () => Promise<void>;
 	getUserNameById: (userId: string) => string | undefined;
 	initialUsersLoaded: boolean;
 }
 
 const UserContext = React.createContext<UserContextType | undefined>(undefined);
 
-const initialUsersData: User[] = [
-	{
-		id: "1",
-		name: "Alice Wonderland",
-		email: "alice@example.com",
-		role: "Administrator",
-		status: "Active",
-		avatar: "https://placehold.co/40x40.png?text=AW",
-		lastLogin: new Date("2024-07-20T10:00:00Z"),
-		dateJoined: new Date("2023-01-15T09:00:00Z"),
-	},
-	{
-		id: "2",
-		name: "Bob The Builder",
-		email: "bob@example.com",
-		role: "Travel Agent",
-		status: "Active",
-		avatar: "https://placehold.co/40x40.png?text=BB",
-		lastLogin: new Date("2024-07-21T14:30:00Z"),
-		dateJoined: new Date("2023-02-20T11:00:00Z"),
-	},
-	{
-		id: "3",
-		name: "Charlie Chaplin",
-		email: "charlie@example.com",
-		role: "Support Staff",
-		status: "Inactive",
-		avatar: "https://placehold.co/40x40.png?text=CC",
-		dateJoined: new Date("2023-03-10T16:00:00Z"),
-	},
-	{
-		id: "4",
-		name: "Diana Prince",
-		email: "diana@example.com",
-		role: "Travel Agent",
-		status: "Pending",
-		avatar: "https://placehold.co/40x40.png?text=DP",
-		dateJoined: new Date("2024-07-22T08:00:00Z"),
-	},
-];
-
-const LOCAL_STORAGE_KEY = "voyageControlUsers";
-
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 	children,
 }) => {
 	const [users, setUsers] = React.useState<User[]>([]);
+	const [loading, setLoading] = React.useState(false);
+	const [error, setError] = React.useState<string | null>(null);
 	const [initialUsersLoaded, setInitialUsersLoaded] = React.useState(false);
 
-	React.useEffect(() => {
+	// Load users from API
+	const loadUsers = React.useCallback(async () => {
 		try {
-			const storedUsers = localStorage.getItem(LOCAL_STORAGE_KEY);
-			if (storedUsers) {
-				const parsedUsers: User[] = JSON.parse(storedUsers).map(
-					(user: any) => ({
-						...user,
-						dateJoined: user.dateJoined
-							? new Date(user.dateJoined)
-							: undefined,
-						lastLogin: user.lastLogin
-							? new Date(user.lastLogin)
-							: undefined,
-					})
-				);
-				setUsers(parsedUsers);
-			} else {
-				setUsers(initialUsersData);
-				localStorage.setItem(
-					LOCAL_STORAGE_KEY,
-					JSON.stringify(initialUsersData)
-				);
-			}
-		} catch (error) {
-			console.error("Failed to load users from localStorage:", error);
-			setUsers(initialUsersData); // Fallback to initial data
+			setLoading(true);
+			setError(null);
+			const response = await usersApi.getUsers({ limit: 1000 }); // Get all users
+			setUsers(response.data);
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to load users";
+			setError(errorMessage);
+			console.error("Failed to load users:", err);
+		} finally {
+			setLoading(false);
+			setInitialUsersLoaded(true);
 		}
-		setInitialUsersLoaded(true);
 	}, []);
 
+	// Initial load
 	React.useEffect(() => {
-		if (initialUsersLoaded) {
-			// Only save if initial load is complete
-			try {
-				localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(users));
-			} catch (error) {
-				console.error("Failed to save users to localStorage:", error);
-			}
+		loadUsers();
+	}, [loadUsers]);
+
+	const addUser = async (userData: CreateUserRequest): Promise<void> => {
+		try {
+			setLoading(true);
+			setError(null);
+			const response = await usersApi.createUser(userData);
+			setUsers((prevUsers) => [response.data, ...prevUsers]);
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to create user";
+			setError(errorMessage);
+			throw err; // Re-throw to allow component to handle
+		} finally {
+			setLoading(false);
 		}
-	}, [users, initialUsersLoaded]);
-
-	const addUser = (user: User) => {
-		setUsers((prevUsers) => [...prevUsers, user]);
 	};
 
-	const updateUser = (updatedUser: User) => {
-		setUsers((prevUsers) =>
-			prevUsers.map((user) =>
-				user.id === updatedUser.id ? updatedUser : user
-			)
-		);
+	const updateUser = async (
+		userId: string,
+		userData: UpdateUserRequest
+	): Promise<void> => {
+		try {
+			setLoading(true);
+			setError(null);
+			const response = await usersApi.updateUser(userId, userData);
+			setUsers((prevUsers) =>
+				prevUsers.map((user) =>
+					user.id === userId ? response.data : user
+				)
+			);
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to update user";
+			setError(errorMessage);
+			throw err; // Re-throw to allow component to handle
+		} finally {
+			setLoading(false);
+		}
 	};
 
-	const deleteUser = (userId: string) => {
-		setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+	const deleteUser = async (userId: string): Promise<void> => {
+		try {
+			setLoading(true);
+			setError(null);
+			await usersApi.deleteUser(userId);
+			setUsers((prevUsers) =>
+				prevUsers.filter((user) => user.id !== userId)
+			);
+		} catch (err) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to delete user";
+			setError(errorMessage);
+			throw err; // Re-throw to allow component to handle
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const refreshUsers = async (): Promise<void> => {
+		await loadUsers();
 	};
 
 	const getUserNameById = (userId: string): string | undefined => {
@@ -129,9 +119,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
 		<UserContext.Provider
 			value={{
 				users,
+				loading,
+				error,
 				addUser,
 				updateUser,
 				deleteUser,
+				refreshUsers,
 				getUserNameById,
 				initialUsersLoaded,
 			}}
